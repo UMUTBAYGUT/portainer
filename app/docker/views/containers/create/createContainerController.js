@@ -16,6 +16,7 @@ import { ContainerDetailsViewModel } from '@/docker/models/container';
 
 import './createcontainer.css';
 import { getContainers } from '@/react/docker/containers/queries/containers';
+import { parseLabelsTabRequest, parseLabelsTabViewModel } from '@/react/docker/containers/CreateView/LabelsTab';
 
 angular.module('portainer.docker').controller('CreateContainerController', [
   '$q',
@@ -78,7 +79,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
         selectedGPUs: ['all'],
         capabilities: ['compute', 'utility'],
       },
-      Labels: [],
       ExtraHosts: [],
       MacAddress: '',
       IPv4: '',
@@ -98,6 +98,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       commands: parseCommandsTabViewModel(),
       volumes: parseVolumesTabViewModel(),
       network: parseNetworkTabViewModel(),
+      labels: parseLabelsTabViewModel(),
     };
 
     $scope.state = {
@@ -130,6 +131,12 @@ angular.module('portainer.docker').controller('CreateContainerController', [
     $scope.onNetworkChange = function (network) {
       return $scope.$evalAsync(() => {
         $scope.formValues.network = network;
+      });
+    };
+
+    $scope.onLabelsChange = function (labels) {
+      return $scope.$evalAsync(() => {
+        $scope.formValues.labels = labels;
       });
     };
 
@@ -233,14 +240,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       $scope.config.HostConfig.PortBindings.splice(index, 1);
     };
 
-    $scope.addLabel = function () {
-      $scope.formValues.Labels.push({ name: '', value: '' });
-    };
-
-    $scope.removeLabel = function (index) {
-      $scope.formValues.Labels.splice(index, 1);
-    };
-
     $scope.addExtraHost = function () {
       $scope.formValues.ExtraHosts.push({ value: '' });
     };
@@ -287,20 +286,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
 
     function prepareEnvironmentVariables(config) {
       config.Env = envVarsUtils.convertToArrayOfStrings($scope.formValues.Env);
-    }
-
-    function prepareLabels(config) {
-      var labels = {};
-      $scope.formValues.Labels.forEach(function (label) {
-        if (label.name) {
-          if (label.value) {
-            labels[label.name] = label.value;
-          } else {
-            labels[label.name] = '';
-          }
-        }
-      });
-      config.Labels = labels;
     }
 
     function prepareDevices(config) {
@@ -404,11 +389,12 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       config = parseCommandsTabRequest(config, $scope.formValues.commands);
       config = parseVolumesTabRequest(config, $scope.formValues.volumes);
       config = parseNetworkTabRequest(config, $scope.formValues.network, $scope.fromContainer.Id);
+      config = parseLabelsTabRequest(config, $scope.formValues.labels);
 
       prepareImageConfig(config);
       preparePortBindings(config);
       prepareEnvironmentVariables(config);
-      prepareLabels(config);
+
       prepareDevices(config);
       prepareResources(config);
       prepareCapabilities(config);
@@ -424,14 +410,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
 
     function loadFromContainerEnvironmentVariables() {
       $scope.formValues.Env = envVarsUtils.parseArrayOfStrings($scope.config.Env);
-    }
-
-    function loadFromContainerLabels() {
-      for (var l in $scope.config.Labels) {
-        if ({}.hasOwnProperty.call($scope.config.Labels, l)) {
-          $scope.formValues.Labels.push({ name: l, value: $scope.config.Labels[l] });
-        }
-      }
     }
 
     function loadFromContainerDevices() {
@@ -549,14 +527,16 @@ angular.module('portainer.docker').controller('CreateContainerController', [
 
           $scope.formValues.commands = parseCommandsTabViewModel(d);
           $scope.formValues.volumes = parseVolumesTabViewModel(d);
-          $scope.formValues.network = parseNetworkTabViewModel(d, $scope.availableNetworks, $scope.runningContainers);
 
+          $scope.formValues.network = parseNetworkTabViewModel(d, $scope.availableNetworks, $scope.runningContainers);
           $scope.extraNetworks = Object.fromEntries(Object.entries(d.NetworkSettings.Networks).filter(([n]) => n !== $scope.formValues.network.networkMode));
+
+          $scope.formValues.labels = parseLabelsTabViewModel(d);
 
           loadFromContainerPortBindings(d);
 
           loadFromContainerEnvironmentVariables(d);
-          loadFromContainerLabels(d);
+
           loadFromContainerDevices(d);
           loadFromContainerDeviceRequests(d);
           loadFromContainerImageConfig(d);

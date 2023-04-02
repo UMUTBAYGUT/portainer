@@ -18,6 +18,10 @@ import {
   NetworkTabValues,
   networkTabValidation,
 } from '@/react/docker/containers/CreateView/NetworkTab';
+import {
+  LabelsTab,
+  labelsTabValidation,
+} from '@/react/docker/containers/CreateView/LabelsTab';
 
 const ngModule = angular.module(
   'portainer.docker.react.components.containers',
@@ -48,4 +52,12 @@ withFormValidation<ComponentProps<typeof NetworkTab>, NetworkTabValues>(
   'dockerCreateContainerNetworkTab',
   ['apiVersion'],
   networkTabValidation
+);
+
+withFormValidation(
+  ngModule,
+  withUIRouter(withReactQuery(LabelsTab)),
+  'dockerCreateContainerLabelsTab',
+  [],
+  labelsTabValidation
 );
