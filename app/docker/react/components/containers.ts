@@ -22,6 +22,10 @@ import {
   LabelsTab,
   labelsTabValidation,
 } from '@/react/docker/containers/CreateView/LabelsTab';
+import {
+  RestartPolicyTab,
+  restartPolicyTabValidation,
+} from '@/react/docker/containers/CreateView/RestartPolicyTab';
 
 const ngModule = angular.module(
   'portainer.docker.react.components.containers',
@@ -60,4 +64,12 @@ withFormValidation(
   'dockerCreateContainerLabelsTab',
   [],
   labelsTabValidation
+);
+
+withFormValidation(
+  ngModule,
+  RestartPolicyTab,
+  'dockerCreateContainerRestartPolicyTab',
+  [],
+  restartPolicyTabValidation
 );

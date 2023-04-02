@@ -99,6 +99,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       volumes: parseVolumesTabViewModel(),
       network: parseNetworkTabViewModel(),
       labels: parseLabelsTabViewModel(),
+      restartPolicy: 'no',
     };
 
     $scope.state = {
@@ -137,6 +138,12 @@ angular.module('portainer.docker').controller('CreateContainerController', [
     $scope.onLabelsChange = function (labels) {
       return $scope.$evalAsync(() => {
         $scope.formValues.labels = labels;
+      });
+    };
+
+    $scope.onRestartPolicyChange = function (restartPolicy) {
+      return $scope.$evalAsync(() => {
+        $scope.formValues.restartPolicy = restartPolicy;
       });
     };
 
@@ -390,6 +397,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       config = parseVolumesTabRequest(config, $scope.formValues.volumes);
       config = parseNetworkTabRequest(config, $scope.formValues.network, $scope.fromContainer.Id);
       config = parseLabelsTabRequest(config, $scope.formValues.labels);
+      config.HostConfig.RestartPolicy.Name = $scope.formValues.restartPolicy;
 
       prepareImageConfig(config);
       preparePortBindings(config);
@@ -532,6 +540,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
           $scope.extraNetworks = Object.fromEntries(Object.entries(d.NetworkSettings.Networks).filter(([n]) => n !== $scope.formValues.network.networkMode));
 
           $scope.formValues.labels = parseLabelsTabViewModel(d);
+          $scope.formValues.restartPolicy = d.HostConfig.RestartPolicy.Name;
 
           loadFromContainerPortBindings(d);
 
