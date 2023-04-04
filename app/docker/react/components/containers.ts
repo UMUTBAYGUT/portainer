@@ -30,6 +30,10 @@ import {
   ResourcesTab,
   resourcesTabValidation,
 } from '@/react/docker/containers/CreateView/ResourcesTab';
+import {
+  CapabilitiesTab,
+  capabilitiesTabValidation,
+} from '@/react/docker/containers/CreateView/CapabilitiesTab';
 
 const ngModule = angular.module(
   'portainer.docker.react.components.containers',
@@ -92,4 +96,12 @@ withFormValidation(
     'onUpdateLimits',
   ],
   resourcesTabValidation
+);
+
+withFormValidation(
+  ngModule,
+  CapabilitiesTab,
+  'dockerCreateContainerCapabilitiesTab',
+  [],
+  capabilitiesTabValidation
 );

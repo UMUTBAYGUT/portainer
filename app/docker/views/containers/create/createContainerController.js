@@ -12,7 +12,7 @@ import { parseVolumesTabRequest, parseVolumesTabViewModel } from '@/react/docker
 import { parseNetworkTabRequest, parseNetworkTabViewModel } from '@/react/docker/containers/CreateView/NetworkTab';
 import { parseLabelsTabRequest, parseLabelsTabViewModel } from '@/react/docker/containers/CreateView/LabelsTab';
 import { parseResourcesTabRequest, parseResourcesTabViewModel } from '@/react/docker/containers/CreateView/ResourcesTab';
-import { ContainerCapabilities, ContainerCapability } from '@/docker/models/containerCapabilities';
+import { parseCapabilitiesTabRequest, parseCapabilitiesTabViewModel } from '@/react/docker/containers/CreateView/CapabilitiesTab';
 import { AccessControlFormData } from '@/portainer/components/accessControlForm/porAccessControlFormModel';
 import { ContainerDetailsViewModel } from '@/docker/models/container';
 import { getContainers } from '@/react/docker/containers/queries/containers';
@@ -88,7 +88,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       AccessControlData: new AccessControlFormData(),
       Env: [],
       NodeName: null,
-      capabilities: [],
       RegistryModel: new PorImageRegistryModel(),
       commands: parseCommandsTabViewModel(),
       volumes: parseVolumesTabViewModel(),
@@ -96,6 +95,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       labels: parseLabelsTabViewModel(),
       restartPolicy: 'no',
       resources: parseResourcesTabViewModel(),
+      capabilities: [],
     };
 
     $scope.state = {
@@ -115,6 +115,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
 
     function handleCommandsChange(commands) {
       return $scope.$evalAsync(() => {
+        console.log('handleCommandsChange', commands);
         $scope.formValues.commands = commands;
       });
     }
@@ -146,6 +147,12 @@ angular.module('portainer.docker').controller('CreateContainerController', [
     $scope.onResourcesChange = function (resources) {
       return $scope.$evalAsync(() => {
         $scope.formValues.resources = resources;
+      });
+    };
+
+    $scope.onCapabilitiesChange = function (capabilities) {
+      return $scope.$evalAsync(() => {
+        $scope.formValues.capabilities = capabilities;
       });
     };
 
@@ -297,21 +304,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       config.Env = envVarsUtils.convertToArrayOfStrings($scope.formValues.Env);
     }
 
-    function prepareCapabilities(config) {
-      var allowed = $scope.formValues.capabilities.filter(function (item) {
-        return item.allowed === true;
-      });
-      var notAllowed = $scope.formValues.capabilities.filter(function (item) {
-        return item.allowed === false;
-      });
-
-      var getCapName = function (item) {
-        return item.capability;
-      };
-      config.HostConfig.CapAdd = allowed.map(getCapName);
-      config.HostConfig.CapDrop = notAllowed.map(getCapName);
-    }
-
     function prepareConfiguration() {
       var config = angular.copy($scope.config);
       config = parseCommandsTabRequest(config, $scope.formValues.commands);
@@ -320,12 +312,12 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       config = parseLabelsTabRequest(config, $scope.formValues.labels);
       config.HostConfig.RestartPolicy.Name = $scope.formValues.restartPolicy;
       config = parseResourcesTabRequest(config, $scope.formValues.resources);
+      config = parseCapabilitiesTabRequest(config, $scope.formValues.capabilities);
 
       prepareImageConfig(config);
       preparePortBindings(config);
       prepareEnvironmentVariables(config);
 
-      prepareCapabilities(config);
       return config;
     }
 
@@ -346,35 +338,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
         .catch(function error(err) {
           Notifications.error('Failure', err, 'Unable to retrieve registry');
         });
-    }
-
-    function loadFromContainerCapabilities(d) {
-      if (d.HostConfig.CapAdd) {
-        d.HostConfig.CapAdd.forEach(function (cap) {
-          $scope.formValues.capabilities.push(new ContainerCapability(cap, true));
-        });
-      }
-      if (d.HostConfig.CapDrop) {
-        d.HostConfig.CapDrop.forEach(function (cap) {
-          $scope.formValues.capabilities.push(new ContainerCapability(cap, false));
-        });
-      }
-
-      function hasCapability(item) {
-        return item.capability === cap.capability;
-      }
-
-      var capabilities = new ContainerCapabilities();
-      for (var i = 0; i < capabilities.length; i++) {
-        var cap = capabilities[i];
-        if (!_.find($scope.formValues.capabilities, hasCapability)) {
-          $scope.formValues.capabilities.push(cap);
-        }
-      }
-
-      $scope.formValues.capabilities.sort(function (a, b) {
-        return a.capability < b.capability ? -1 : 1;
-      });
     }
 
     function loadFromContainerSpec() {
@@ -406,14 +369,13 @@ angular.module('portainer.docker').controller('CreateContainerController', [
           $scope.formValues.labels = parseLabelsTabViewModel(d);
           $scope.formValues.restartPolicy = d.HostConfig.RestartPolicy.Name;
           $scope.formValues.resources = parseResourcesTabViewModel(d);
+          $scope.formValues.capabilities = parseCapabilitiesTabViewModel(d);
 
           loadFromContainerPortBindings(d);
 
           loadFromContainerEnvironmentVariables(d);
 
           loadFromContainerImageConfig(d);
-
-          loadFromContainerCapabilities(d);
         })
         .catch(function error(err) {
           Notifications.error('Failure', err, 'Unable to retrieve container');
@@ -454,7 +416,9 @@ angular.module('portainer.docker').controller('CreateContainerController', [
             loadFromContainerSpec();
           } else {
             $scope.fromContainer = {};
-            $scope.formValues.capabilities = $scope.areContainerCapabilitiesEnabled ? new ContainerCapabilities() : [];
+            if ($scope.areContainerCapabilitiesEnabled) {
+              $scope.formValues.capabilities = parseCapabilitiesTabViewModel();
+            }
           }
         })
         .catch((e) => {
