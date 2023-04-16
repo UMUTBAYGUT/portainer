@@ -41,7 +41,7 @@ export function DockerSidebar({ environmentId, environment }: Props) {
   );
 
   const envVersionQuery = useVersion(environmentId, (version) =>
-    parseFloat(version.ApiVersion)
+    version.ApiVersion ? parseFloat(version.ApiVersion) : 0
   );
 
   const isSwarmManager = envInfoQuery.data;
