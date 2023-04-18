@@ -59,7 +59,7 @@ export interface Values extends BaseFormValues {
   env: EnvVarValues;
 }
 
-export function useInitialValues() {
+export function useInitialValues(submitting: boolean) {
   const {
     params: { nodeName, from },
   } = useCurrentStateAndParams();
@@ -67,9 +67,10 @@ export function useInitialValues() {
   const { isAdmin, user } = useCurrentUser();
   const networksQuery = useNetworksForSelector();
 
-  const fromContainerQuery = useContainer(environmentId, from);
+  const fromContainerQuery = useContainer(environmentId, from, {
+    enabled: !submitting,
+  });
   const runningContainersQuery = useContainers(environmentId, {
-    all: false,
     enabled: !!from,
   });
   const webhookQuery = useWebhooks(

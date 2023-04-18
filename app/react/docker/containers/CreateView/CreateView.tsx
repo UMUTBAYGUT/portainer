@@ -59,10 +59,11 @@ function CreateForm() {
   const { trackEvent } = useAnalytics();
   const { isAdmin } = useCurrentUser();
 
-  const initialValuesQuery = useInitialValues();
-  const registriesQuery = useEnvironmentRegistries(environmentId);
-
   const mutation = useCreateOrReplaceMutation();
+  const initialValuesQuery = useInitialValues(
+    mutation.isLoading || mutation.isSuccess
+  );
+  const registriesQuery = useEnvironmentRegistries(environmentId);
 
   const { oldContainer, syncName } = useOldContainer(
     initialValuesQuery?.initialValues?.name

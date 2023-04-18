@@ -74,7 +74,8 @@ export interface ContainerJSON {
 
 export function useContainer(
   environmentId: EnvironmentId,
-  containerId?: ContainerId
+  containerId?: ContainerId,
+  { enabled }: { enabled?: boolean } = {}
 ) {
   return useQuery(
     containerId ? queryKeys.container(environmentId, containerId) : [],
@@ -84,7 +85,7 @@ export function useContainer(
         title: 'Failure',
         message: 'Unable to retrieve container',
       },
-      enabled: !!containerId,
+      enabled: enabled && !!containerId,
     }
   );
 }
