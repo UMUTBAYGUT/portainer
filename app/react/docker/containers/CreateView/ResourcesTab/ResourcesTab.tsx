@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { FormikErrors } from 'formik';
+import { ReactNode } from 'react';
 
 import { useIsStandAlone } from '@/react/docker/proxy/queries/useInfo';
 import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
@@ -16,7 +17,6 @@ import {
   ResourceFieldset,
   Values as ResourcesValues,
 } from './ResourcesFieldset';
-import { EditResourcesForm } from './EditResourceForm';
 
 export interface Values {
   runtime: RuntimeValues;
@@ -40,9 +40,7 @@ export function ResourcesTab({
   isInitFieldVisible,
   isDevicesFieldVisible,
   isSysctlFieldVisible,
-  isDuplicate,
-  onUpdateLimits,
-  isImageInvalid,
+  renderLimits,
 }: {
   values: Values;
   setFieldValue: (field: string, value: unknown) => void;
@@ -51,9 +49,7 @@ export function ResourcesTab({
   isInitFieldVisible: boolean;
   isDevicesFieldVisible: boolean;
   isSysctlFieldVisible: boolean;
-  isDuplicate?: boolean;
-  onUpdateLimits: (values: ResourcesValues) => Promise<void>;
-  isImageInvalid: boolean;
+  renderLimits?: (values: ResourcesValues) => ReactNode;
 }) {
   const environmentId = useEnvironmentId();
 
@@ -121,12 +117,8 @@ export function ResourcesTab({
         />
       )}
 
-      {isDuplicate ? (
-        <EditResourcesForm
-          initialValues={values.resources}
-          onSubmit={onUpdateLimits}
-          isImageInvalid={isImageInvalid}
-        />
+      {renderLimits ? (
+        renderLimits(values.resources)
       ) : (
         <ResourceFieldset
           values={values.resources}

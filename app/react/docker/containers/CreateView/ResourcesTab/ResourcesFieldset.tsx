@@ -11,7 +11,7 @@ import { Slider } from '@@/form-components/Slider';
 
 import { CreateContainerRequest } from '../types';
 
-import { toConfigMemory } from './memory-utils';
+import { toConfigCpu, toConfigMemory } from './memory-utils';
 
 export interface Values {
   reservation: number;
@@ -109,18 +109,10 @@ export function parseRequest(
 ): CreateContainerRequest['HostConfig'] {
   return {
     ...oldConfig,
-    NanoCpus: cpu(values.cpu),
+    NanoCpus: toConfigCpu(values.cpu),
     MemoryReservation: toConfigMemory(values.reservation),
     Memory: toConfigMemory(values.limit),
   };
-
-  function cpu(value: number) {
-    if (value < 0) {
-      return 0;
-    }
-
-    return value * 1000000000;
-  }
 }
 
 export function resourcesValidation({

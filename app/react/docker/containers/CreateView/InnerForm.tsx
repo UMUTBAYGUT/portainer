@@ -21,6 +21,7 @@ import { ResourcesTab } from './ResourcesTab';
 import { RestartPolicyTab } from './RestartPolicyTab';
 import { VolumesTab } from './VolumesTab';
 import { Values } from './useInitialValues';
+import { EditResourcesForm } from './ResourcesTab/EditResourceForm';
 
 export function InnerForm({
   isLoading,
@@ -31,7 +32,8 @@ export function InnerForm({
   isLoading: boolean;
   onChangeName: (value: string) => void;
 }) {
-  const { values, setFieldValue, errors, isValid } = useFormikContext<Values>();
+  const { values, setFieldValue, errors, isValid, submitForm } =
+    useFormikContext<Values>();
   const environmentId = useEnvironmentId();
   const [tab, setTab] = useState('commands');
   const apiVersion = useApiVersion(environmentId);
@@ -171,15 +173,23 @@ export function InnerForm({
                               environment.SecuritySettings
                                 .allowSysctlSettingForRegularUsers
                             }
-                            isImageInvalid={
-                              !values.image.image ||
-                              (typeof values.image.registryId === 'undefined' &&
-                                !!isDuplicate)
+                            renderLimits={
+                              isDuplicate
+                                ? (values) => (
+                                    <EditResourcesForm
+                                      initialValues={values}
+                                      redeploy={(values) => {
+                                        setFieldValue(
+                                          'resources.resources',
+                                          values
+                                        );
+                                        return submitForm();
+                                      }}
+                                      isImageInvalid={!!errors?.image}
+                                    />
+                                  )
+                                : undefined
                             }
-                            isDuplicate={!!isDuplicate}
-                            onUpdateLimits={async (limits) => {
-                              console.log(limits);
-                            }}
                           />
                         ),
                       },
