@@ -8,10 +8,10 @@ import axios, { parseAxiosError } from '@/portainer/services/axios';
 import { EnvironmentId } from '@/react/portainer/environments/types';
 import { Registry } from '@/react/portainer/registries/types/registry';
 
-import { buildUrl } from '../../proxy/queries/build-url';
 import { buildImageFullURI } from '../utils';
 
 import { encodeRegistryCredentials } from './encodeRegistryCredentials';
+import { buildUrl } from './build-url';
 
 interface PullImageOptions {
   environmentId: EnvironmentId;
@@ -44,7 +44,7 @@ export async function pullImage({
   }
 
   try {
-    await axios.post(buildUrl(environmentId, 'create'), null, {
+    await axios.post(buildUrl(environmentId, { action: 'create' }), null, {
       params: {
         fromImage: imageURI,
       },

@@ -1,6 +1,6 @@
 import { Formik } from 'formik';
 import { useRouter } from '@uirouter/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { parseBaseFormRequest } from '@/react/docker/containers/CreateView/BaseForm';
 import { parseCapabilitiesTabRequest } from '@/react/docker/containers/CreateView/CapabilitiesTab';
@@ -23,6 +23,8 @@ import { convertToArrayOfStrings } from '@@/form-components/EnvironmentVariables
 import { ImageConfigValues } from '@@/ImageConfigFieldset';
 import { confirmDestructive } from '@@/modals/confirm';
 import { buildConfirmButton } from '@@/modals/utils';
+import { InformationPanel } from '@@/InformationPanel';
+import { TextTip } from '@@/Tip/TextTip';
 
 import { buildImageFullURI } from '../../images/utils';
 import { useContainers } from '../queries/containers';
@@ -62,13 +64,9 @@ function CreateForm() {
 
   const mutation = useCreateOrReplaceMutation();
 
-  const [name, setName] = useState('');
-  const debouncedName = useDebouncedValue(name, 1000);
-  const oldContainerQuery = useContainers(environmentId, {
-    filters: {
-      name: [`^/${debouncedName}$`],
-    },
-  });
+  const { oldContainer, syncName } = useOldContainer(
+    initialValuesQuery?.initialValues?.name
+  );
 
   const { maxCpu, maxMemory } = useSystemLimits(environmentId);
 
@@ -79,33 +77,53 @@ function CreateForm() {
 
   const environment = envQuery.data;
 
-  const oldContainer =
-    oldContainerQuery.data && oldContainerQuery.data.length > 0
-      ? oldContainerQuery.data[0]
-      : undefined;
-
-  const { isDuplicating = false, initialValues } = initialValuesQuery;
+  const {
+    isDuplicating = false,
+    initialValues,
+    extraNetworks,
+  } = initialValuesQuery;
 
   return (
-    <Formik
-      initialValues={initialValues}
-      onSubmit={handleSubmit}
-      validationSchema={() =>
-        validation({
-          isAdmin,
-          maxCpu,
-          maxMemory,
-          isDuplicating,
-          isDuplicatingPortainer: oldContainer?.IsPortainer,
-        })
-      }
-    >
-      <InnerForm
-        onChangeName={setName}
-        isDuplicate={isDuplicating}
-        isLoading={mutation.isLoading}
-      />
-    </Formik>
+    <>
+      {isDuplicating && (
+        <InformationPanel title-text="Caution">
+          <TextTip>
+            The new container may fail to start if the image is changed, and
+            settings from the previous container aren&apos;t compatible. Common
+            causes include entrypoint, cmd or
+            <a
+              href="https://docs.portainer.io/user/docker/containers/advanced"
+              target="_blank"
+              rel="noreferrer"
+            >
+              other settings
+            </a>{' '}
+            set by an image.
+          </TextTip>
+        </InformationPanel>
+      )}
+
+      <Formik
+        initialValues={initialValues}
+        onSubmit={handleSubmit}
+        validateOnMount
+        validationSchema={() =>
+          validation({
+            isAdmin,
+            maxCpu,
+            maxMemory,
+            isDuplicating,
+            isDuplicatingPortainer: oldContainer?.IsPortainer,
+          })
+        }
+      >
+        <InnerForm
+          onChangeName={syncName}
+          isDuplicate={isDuplicating}
+          isLoading={mutation.isLoading}
+        />
+      </Formik>
+    </>
   );
 
   async function handleSubmit(values: Values) {
@@ -126,7 +144,7 @@ function CreateForm() {
     const config = buildConfig(values, registry);
 
     mutation.mutate(
-      { config, environment, values, registry, oldContainer },
+      { config, environment, values, registry, oldContainer, extraNetworks },
       {
         onSuccess() {
           sendAnalytics(values, registry);
@@ -204,4 +222,30 @@ function getRegistry(image: ImageConfigValues, registries: Registry[]) {
   return image.useRegistry
     ? registries.find((registry) => registry.Id === image.registryId)
     : undefined;
+}
+
+function useOldContainer(initialName?: string) {
+  const environmentId = useEnvironmentId();
+
+  const [name, setName] = useState(initialName);
+  const debouncedName = useDebouncedValue(name, 1000);
+  const oldContainerQuery = useContainers(environmentId, {
+    enabled: !!debouncedName,
+    filters: {
+      name: [`^/${debouncedName}$`],
+    },
+  });
+  useEffect(() => {
+    if (initialName && initialName !== name) {
+      setName(initialName);
+    }
+  }, [initialName, name]);
+
+  return {
+    syncName: setName,
+    oldContainer:
+      oldContainerQuery.data && oldContainerQuery.data.length > 0
+        ? oldContainerQuery.data[0]
+        : undefined,
+  };
 }

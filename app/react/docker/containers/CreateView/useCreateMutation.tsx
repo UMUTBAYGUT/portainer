@@ -1,4 +1,3 @@
-import { EndpointSettings } from 'docker-types/generated/1.41';
 import { useMutation, useQueryClient } from 'react-query';
 import { AxiosRequestHeaders } from 'axios';
 
@@ -14,7 +13,10 @@ import {
 } from '@/react/portainer/registries/types/registry';
 import { createWebhook } from '@/react/portainer/webhooks/createWebhook';
 import { WebhookType } from '@/react/portainer/webhooks/types';
-import { AccessControlFormData } from '@/react/portainer/access-control/types';
+import {
+  AccessControlFormData,
+  ResourceControlResponse,
+} from '@/react/portainer/access-control/types';
 import { applyResourceControl } from '@/react/portainer/access-control/access-control.service';
 import PortainerError from '@/portainer/error';
 import {
@@ -40,6 +42,11 @@ import { queryKeys } from '../queries/query-keys';
 import { CreateContainerRequest } from './types';
 import { Values } from './useInitialValues';
 
+interface ExtraNetwork {
+  networkName: string;
+  aliases: string[];
+}
+
 export function useCreateOrReplaceMutation() {
   const environmentId = useEnvironmentId();
   const queryClient = useQueryClient();
@@ -62,11 +69,17 @@ interface CreateOptions {
 
 interface ReplaceOptions extends CreateOptions {
   oldContainer: DockerContainer;
-  extraNetworks: Record<string, EndpointSettings>;
+  extraNetworks: Array<ExtraNetwork>;
+}
+
+function isReplace(
+  options: ReplaceOptions | CreateOptions
+): options is ReplaceOptions {
+  return 'oldContainer' in options && !!options.oldContainer;
 }
 
 export function createOrReplace(options: ReplaceOptions | CreateOptions) {
-  return 'oldContainer' in options ? replace(options) : create(options);
+  return isReplace(options) ? replace(options) : create(options);
 }
 
 async function create({
@@ -83,12 +96,19 @@ async function create({
     registry
   );
 
-  await createWithAccessControl(
-    config,
+  const containerResponse = await createAndStart(
     environment,
-    values.nodeName,
+    config,
+    values.name,
+    values.nodeName
+  );
+
+  await applyContainerSettings(
+    containerResponse.Id,
+    environment,
     values.enableWebhook,
     values.accessControl,
+    containerResponse.Portainer?.ResourceControl,
     registry
   );
 }
@@ -101,81 +121,138 @@ async function replace({
   environment,
   extraNetworks,
 }: ReplaceOptions) {
-  let containerId = '';
+  await pullImageIfNeeded(
+    environment.Id,
+    values.nodeName,
+    values.alwaysPull,
+    values.image.image,
+    registry
+  );
+
+  const containerResponse = await renameAndCreate(
+    environment,
+    values,
+    oldContainer,
+    config
+  );
+
+  await applyContainerSettings(
+    containerResponse.Id,
+    environment,
+    values.enableWebhook,
+    values.accessControl,
+    containerResponse.Portainer?.ResourceControl,
+    registry
+  );
+
+  await connectToExtraNetworks(
+    environment.Id,
+    values.nodeName,
+    containerResponse.Id,
+    extraNetworks
+  );
+
+  await removeContainer(environment.Id, oldContainer.Id, {
+    nodeName: values.nodeName,
+  });
+}
+
+/**
+ * stop and renames the old container, and creates and stops the new container.
+ * on any failure, it will rename the old container to its original name
+ */
+async function renameAndCreate(
+  environment: Environment,
+  values: Values,
+  oldContainer: DockerContainer,
+  config: CreateContainerRequest
+) {
+  let renamed = false;
   try {
-    await pullImageIfNeeded(
-      environment.Id,
-      values.nodeName,
-      values.alwaysPull,
-      values.image.image,
-      registry
-    );
+    await stopContainerIfNeeded(environment.Id, values.nodeName, oldContainer);
 
-    await stopAndRenameContainer(environment.Id, values.nodeName, oldContainer);
-
-    containerId = await createWithAccessControl(
-      config,
-      environment,
-      values.nodeName,
-      values.enableWebhook,
-      values.accessControl,
-      registry
-    );
-
-    await connectToExtraNetworks(
-      environment.Id,
-      values.nodeName,
-      containerId,
-      extraNetworks
-    );
-
-    await removeContainer(environment.Id, oldContainer.Id, {
-      nodeName: values.nodeName,
-    });
-  } catch (e) {
-    await removeContainer(environment.Id, containerId, {
-      nodeName: values.nodeName,
-    });
     await renameContainer(
       environment.Id,
       oldContainer.Id,
+      `${oldContainer.Names[0]}-old`,
+      { nodeName: values.nodeName }
+    );
+    renamed = true;
+
+    return await createAndStart(
+      environment,
+      config,
       values.name,
       values.nodeName
     );
-
+  } catch (e) {
+    if (renamed) {
+      await renameContainer(environment.Id, oldContainer.Id, values.name, {
+        nodeName: values.nodeName,
+      });
+    }
     throw e;
   }
 }
 
-async function createWithAccessControl(
-  config: CreateContainerRequest,
+/**
+ * creates a webhook if necessary and applies resource control
+ */
+async function applyContainerSettings(
+  containerId: string,
   environment: Environment,
-  nodeName: string,
   enableWebhook: boolean,
   accessControl: AccessControlFormData,
+  resourceControl?: ResourceControlResponse,
   registry?: Registry
 ) {
-  const containerResponse = await createNewContainer(
-    environment.Id,
-    nodeName,
-    config
-  );
-  await createContainerWebhook(
-    enableWebhook,
-    containerResponse.Id,
-    environment,
-    nodeName,
-    registry?.Id
-  );
+  if (enableWebhook) {
+    await createContainerWebhook(containerId, environment, registry?.Id);
+  }
 
-  const resourceControl = containerResponse.Portainer?.ResourceControl;
+  // Portainer will always return a resource control, but since types mark it as optional, we need to check it.
+  // Ignoring the missing value will result with bugs, hence it's better to throw an error
   if (!resourceControl) {
     throw new PortainerError('resource control expected after creation');
   }
 
   await applyResourceControl(accessControl, resourceControl.Id);
+}
 
-  return containerResponse.Id;
+/**
+ * creates a new container and starts it.
+ * on failure, it will remove the new container
+ */
+async function createAndStart(
+  environment: Environment,
+  config: CreateContainerRequest,
+  name: string,
+  nodeName: string
+) {
+  let containerId = '';
+  try {
+    const containerResponse = await createContainer(
+      environment.Id,
+      config,
+      name,
+      {
+        nodeName,
+      }
+    );
+
+    containerId = containerResponse.Id;
+
+    await startContainer(environment.Id, containerResponse.Id, { nodeName });
+    return containerResponse;
+  } catch (e) {
+    if (containerId) {
+      await removeContainer(environment.Id, containerId, {
+        nodeName,
+      });
+    }
+
+    throw e;
+  }
 }
 
 async function pullImageIfNeeded(
@@ -185,7 +262,7 @@ async function pullImageIfNeeded(
   image: string,
   registry?: Registry
 ) {
-  if (pull) {
+  if (!pull) {
     return null;
   }
 
@@ -198,22 +275,11 @@ async function pullImageIfNeeded(
   });
 }
 
-async function createNewContainer(
-  environmentId: EnvironmentId,
-  nodeName: string,
-  config: CreateContainerRequest
-) {
-  const container = await createContainer(environmentId, nodeName, config);
-
-  await startContainer(environmentId, nodeName, container.Id);
-
-  return container;
-}
-
 async function createContainer(
   environmentId: EnvironmentId,
-  nodeName: string,
-  config: CreateContainerRequest
+  config: CreateContainerRequest,
+  name?: string,
+  { nodeName }: { nodeName?: string } = {}
 ) {
   try {
     const headers: AxiosRequestHeaders = {};
@@ -224,7 +290,10 @@ async function createContainer(
 
     const { data } = await axios.post<
       PortainerResponse<{ Id: string; Warnings: Array<string> }>
-    >(urlBuilder(environmentId, undefined, 'create'), config, { headers });
+    >(urlBuilder(environmentId, undefined, 'create'), config, {
+      headers,
+      params: { name },
+    });
 
     return data;
   } catch (err) {
@@ -233,63 +302,44 @@ async function createContainer(
 }
 
 async function createContainerWebhook(
-  enableWebhook: boolean,
   containerId: string,
   environment: Environment,
-  nodeName: string,
   registryId?: RegistryId
 ) {
   const isNotEdgeAgentOnDockerEnvironment =
     environment.Type !== EnvironmentType.EdgeAgentOnDocker;
-  if (isNotEdgeAgentOnDockerEnvironment && enableWebhook) {
-    await createWebhook({
-      resourceId: containerId,
-      environmentId: environment.Id,
-      registryId,
-      webhookType: WebhookType.DockerContainer,
-    });
+  if (!isNotEdgeAgentOnDockerEnvironment) {
+    return;
   }
-  return containerId;
+
+  await createWebhook({
+    resourceId: containerId,
+    environmentId: environment.Id,
+    registryId,
+    webhookType: WebhookType.DockerContainer,
+  });
 }
 
 function connectToExtraNetworks(
   environmentId: EnvironmentId,
   nodeName: string,
   containerId: string,
-  extraNetworks: Record<string, EndpointSettings>
+  extraNetworks: Array<ExtraNetwork>
 ) {
   if (!extraNetworks) {
     return null;
   }
 
   return Promise.all(
-    Object.entries(extraNetworks).map(([networkId, network]) =>
+    extraNetworks.map(({ networkName, aliases }) =>
       connectContainer({
-        networkId,
+        networkId: networkName,
         nodeName,
         containerId,
         environmentId,
-        aliases: network.Aliases,
+        aliases,
       })
     )
-  );
-}
-
-async function stopAndRenameContainer(
-  environmentId: EnvironmentId,
-  nodeName: string,
-  container: DockerContainer
-) {
-  if (!container || !container.Id) {
-    return null;
-  }
-  await stopContainerIfNeeded(environmentId, nodeName, container);
-
-  return renameContainer(
-    environmentId,
-    container.Id,
-    `${container.Names[0]}-old`,
-    nodeName
   );
 }
 
@@ -301,5 +351,5 @@ function stopContainerIfNeeded(
   if (container.State !== 'running' || !container.Id) {
     return null;
   }
-  return stopContainer(environmentId, nodeName, container.Id);
+  return stopContainer(environmentId, container.Id, { nodeName });
 }
