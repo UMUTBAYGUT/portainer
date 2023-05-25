@@ -89,7 +89,7 @@ export function BaseForm({
         <FormSection title="Image Configuration">
           <ImageConfigFieldset
             values={values.image}
-            setValidity={(valid) => setFieldError('image', valid ? '' : ' ')}
+            setValidity={(valid) => setFieldError('image', valid)}
             fieldNamespace="image"
             autoComplete
             checkRateLimits={values.alwaysPull}

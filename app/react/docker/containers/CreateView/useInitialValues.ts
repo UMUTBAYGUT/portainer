@@ -36,7 +36,10 @@ import {
 import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
 import { useCurrentUser } from '@/react/hooks/useUser';
 import { useEnvironmentRegistries } from '@/react/portainer/environments/queries/useEnvironmentRegistries';
-import { getImageConfig } from '@/react/portainer/registries/utils/getImageConfig';
+import {
+  getDefaultImageConfig,
+  getImageConfig,
+} from '@/react/portainer/registries/utils/getImageConfig';
 import { useWebhooks } from '@/react/portainer/webhooks/useWebhooks';
 import { UserId } from '@/portainer/users/types';
 
@@ -127,11 +130,7 @@ export function useInitialValues(submitting: boolean) {
 
   const imageConfig = fromContainer?.Config?.Image
     ? getImageConfig(fromContainer?.Config?.Image, registriesQuery.data)
-    : {
-        image: '',
-        useRegistry: true,
-        registryId: 0,
-      };
+    : getDefaultImageConfig();
 
   const initialValues: Values = {
     commands: parseCommandsTabViewModel(fromContainer),
@@ -166,11 +165,7 @@ function defaultValues(
     resources: getDefaultResourcesTabViewModel(),
     capabilities: getDefaultCapabilitiesTabViewModel(),
     nodeName,
-    image: {
-      image: '',
-      useRegistry: true,
-      registryId: 0,
-    },
+    image: getDefaultImageConfig(),
     enableWebhook: false,
     env: [],
     ...parseBaseFormViewModel(isAdmin, currentUserId),
