@@ -12,7 +12,7 @@ export const containersModule = angular
   .module('portainer.docker.react.views.containers', [])
   .component(
     'createContainerView',
-    r2a(withUIRouter(withReactQuery(withCurrentUser(CreateView))), [])
+    r2a(withUIRouter(withCurrentUser(CreateView)), [])
   )
   .component(
     'containersView',
