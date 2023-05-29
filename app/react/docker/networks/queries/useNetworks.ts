@@ -36,21 +36,23 @@ export async function getNetworks(
   try {
     const { data } = await axios.get<Array<DockerNetwork>>(
       buildUrl(environmentId, 'networks'),
-      {
+      filters && {
         params: {
           filters,
         },
       }
     );
 
-    return data.filter(
-      (network) =>
-        (local && network.Scope === 'local') ||
-        (swarm && network.Scope === 'swarm') ||
-        (swarmAttachable &&
-          network.Scope === 'swarm' &&
-          network.Attachable === true)
-    );
+    return !local && !swarm && !swarmAttachable
+      ? data
+      : data.filter(
+          (network) =>
+            (local && network.Scope === 'local') ||
+            (swarm && network.Scope === 'swarm') ||
+            (swarmAttachable &&
+              network.Scope === 'swarm' &&
+              network.Attachable === true)
+        );
   } catch (err) {
     throw parseAxiosError(err as Error, 'Unable to retrieve networks');
   }
