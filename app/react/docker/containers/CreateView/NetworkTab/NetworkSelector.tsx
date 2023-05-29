@@ -1,6 +1,6 @@
 import { useNetworks } from '@/react/docker/networks/queries/useNetworks';
 import { DockerNetwork } from '@/react/docker/networks/types';
-import { useInfo } from '@/react/docker/proxy/queries/useInfo';
+import { useIsSwarm } from '@/react/docker/proxy/queries/useInfo';
 import { useApiVersion } from '@/react/docker/proxy/queries/useVersion';
 import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
 
@@ -38,17 +38,16 @@ export function useNetworksForSelector<T = DockerNetwork[]>({
 } = {}) {
   const environmentId = useEnvironmentId();
 
-  const isSwarmQuery = useInfo(environmentId, (info) => !!info.Swarm?.NodeID);
+  const isSwarmQuery = useIsSwarm(environmentId);
   const dockerApiVersion = useApiVersion(environmentId);
 
   return useNetworks(
     environmentId,
     {
       local: true,
-      swarmAttachable: isSwarmQuery.data && dockerApiVersion >= 1.25,
+      swarmAttachable: isSwarmQuery && dockerApiVersion >= 1.25,
     },
     {
-      enabled: isSwarmQuery.isSuccess,
       select,
     }
   );

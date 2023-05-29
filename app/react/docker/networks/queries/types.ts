@@ -1,18 +1,18 @@
 interface Filters {
   /* dangling=<boolean> When set to true (or 1), returns all networks that are not in use by a container. When set to false (or 0), only networks that are in use by one or more containers are returned. */
-  dangling?: boolean;
+  dangling?: boolean[];
   // Matches a network's driver
-  driver?: string;
+  driver?: string[];
   // Matches all or part of a network ID
-  id?: string;
+  id?: string[];
   // `label=<key>` or `label=<key>=<value>` of a network label.
-  label?: string;
+  label?: string[];
   // Matches all or part of a network name.
-  name?: string;
+  name?: string[];
   // Filters networks by scope (swarm, global, or local).
-  scope?: 'swarm' | 'global' | 'local';
+  scope?: ('swarm' | 'global' | 'local')[];
   //  Filters networks by type. The custom keyword returns all user-defined networks.
-  type?: 'custom' | 'builtin';
+  type?: ('custom' | 'builtin')[];
 }
 
 export interface NetworksQuery {
