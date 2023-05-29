@@ -18,7 +18,10 @@ import { ImageConfigFieldset, ImageConfigValues } from '@@/ImageConfigFieldset';
 import { LoadingButton } from '@@/buttons';
 import { Widget } from '@@/Widget';
 
-import { PortsMappingField } from './PortsMappingField';
+import {
+  PortsMappingField,
+  Values as PortMappingValue,
+} from './PortsMappingField';
 
 export interface Values {
   name: string;
@@ -26,11 +29,7 @@ export interface Values {
   publishAllPorts: boolean;
   image: ImageConfigValues;
   alwaysPull: boolean;
-  ports: Array<{
-    containerPort: string;
-    hostPort: string;
-    protocol: 'tcp' | 'udp';
-  }>;
+  ports: PortMappingValue;
   accessControl: AccessControlFormData;
   nodeName: string;
   autoRemove: boolean;

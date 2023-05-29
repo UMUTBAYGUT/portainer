@@ -1,7 +1,7 @@
 import { PortMap } from 'docker-types/generated/1.41';
 import _ from 'lodash';
 
-import { Values } from './PortsMappingField';
+import { Protocol, Values } from './PortsMappingField';
 
 export type Range = {
   start: number;
@@ -14,13 +14,13 @@ export function parseViewModel(portBindings: PortMap): Values {
 
   return combinePorts(sortedPorts);
 
-  function isProtocol(value: string): value is 'tcp' | 'udp' {
+  function isProtocol(value: string): value is Protocol {
     return value === 'tcp' || value === 'udp';
   }
 
   function parsePorts(portBindings: PortMap): Array<{
     hostPort: number;
-    protocol: 'tcp' | 'udp';
+    protocol: Protocol;
     containerPort: number;
   }> {
     return Object.entries(portBindings).flatMap(([key, bindings]) => {
@@ -45,12 +45,12 @@ export function parseViewModel(portBindings: PortMap): Values {
   function sortPorts(
     ports: Array<{
       hostPort: number;
-      protocol: 'tcp' | 'udp';
+      protocol: Protocol;
       containerPort: number;
     }>
   ): Array<{
     hostPort: number;
-    protocol: 'tcp' | 'udp';
+    protocol: Protocol;
     containerPort: number;
   }> {
     return _.sortBy(ports, ['containerPort', 'hostPort', 'protocol']);
@@ -59,7 +59,7 @@ export function parseViewModel(portBindings: PortMap): Values {
   function combinePorts(
     ports: Array<{
       hostPort: number;
-      protocol: 'tcp' | 'udp';
+      protocol: Protocol;
       containerPort: number;
     }>
   ) {
@@ -92,7 +92,7 @@ export function parseViewModel(portBindings: PortMap): Values {
             protocol: port.protocol,
           },
         ];
-      }, [] as Array<{ hostPort: Range; containerPort: Range; protocol: 'tcp' | 'udp' }>)
+      }, [] as Array<{ hostPort: Range; containerPort: Range; protocol: Protocol }>)
       .map(({ protocol, containerPort, hostPort }) => ({
         hostPort: getRange(hostPort.start, hostPort.end),
         containerPort: getRange(containerPort.start, containerPort.end),
