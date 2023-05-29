@@ -30,7 +30,7 @@ export function RuntimeSection({
           <div className="col-sm-12">
             <SwitchField
               labelClass="col-sm-2"
-              label="Privileged Mode"
+              label="Privileged mode"
               checked={values.privileged}
               onChange={(privileged) => handleChange({ privileged })}
             />
