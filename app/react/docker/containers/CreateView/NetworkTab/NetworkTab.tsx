@@ -1,15 +1,10 @@
 import { FormikErrors } from 'formik';
 
-import { useIsSwarm } from '@/react/docker/proxy/queries/useInfo';
-import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
-import { useNetworks } from '@/react/docker/networks/queries/useNetworks';
-
 import { FormControl } from '@@/form-components/FormControl';
 import { Input } from '@@/form-components/Input';
 import { InputList, ItemProps } from '@@/form-components/InputList';
 import { InputGroup } from '@@/form-components/InputGroup';
 import { FormError } from '@@/form-components/FormError';
-import { Link } from '@@/Link';
 
 import { NetworksSelector } from './NetworkSelector';
 import { Values } from './types';
@@ -24,34 +19,8 @@ export function NetworkTab({
   setFieldValue: (field: string, value: unknown) => void;
   errors?: FormikErrors<Values>;
 }) {
-  const environmentId = useEnvironmentId();
-  const isSwarm = useIsSwarm(environmentId);
-  const globalNetworkCountQuery = useNetworks(
-    environmentId,
-    {
-      filters: {
-        scope: ['global'],
-      },
-    },
-    {
-      enabled: isSwarm,
-      select: (networks) => networks.length,
-    }
-  );
-
   return (
     <div className="mt-3">
-      {isSwarm && globalNetworkCountQuery.data === 0 && (
-        <div className="form-group">
-          <div className="col-sm-12">
-            <span className="small text-muted">
-              You don&apos;t have any shared networks. Head over to the{' '}
-              <Link to="docker.networks">networks view</Link> to create one.
-            </span>
-          </div>
-        </div>
-      )}
-
       <FormControl label="Network" errors={errors?.networkMode}>
         <NetworksSelector
           value={values.networkMode}
