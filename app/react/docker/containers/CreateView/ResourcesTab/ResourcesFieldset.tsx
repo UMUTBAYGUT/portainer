@@ -79,7 +79,7 @@ function SliderWithInput({
   return (
     <div className="flex items-center gap-4">
       {max && (
-        <div className="flex-1">
+        <div className="mr-2 flex-1">
           <Slider
             onChange={(value) =>
               onChange(typeof value === 'number' ? value : value[0])

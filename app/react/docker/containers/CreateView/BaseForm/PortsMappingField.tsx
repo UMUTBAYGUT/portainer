@@ -8,8 +8,6 @@ import { ItemProps } from '@@/form-components/InputList/InputList';
 import { Icon } from '@@/Icon';
 import { InputLabeled } from '@@/form-components/Input/InputLabeled';
 
-import styles from './PortsMappingField.module.css';
-
 export type Protocol = 'tcp' | 'udp';
 
 export interface PortMapping {
@@ -71,7 +69,7 @@ function Item({
   index,
 }: ItemProps<PortMapping>) {
   return (
-    <div className={styles.item}>
+    <div className="flex flex-col">
       <div className="flex items-center gap-2">
         <InputLabeled
           size="small"

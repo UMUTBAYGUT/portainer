@@ -47,10 +47,10 @@ export function InnerForm({
   const environment = envQuery.data;
 
   return (
-    <Form>
+    <Form className="form-horizontal">
       <div className="row">
         <div className="col-sm-12">
-          <div className="form-horizontal">
+          <div>
             <BaseForm
               onChangeName={onChangeName}
               isLoading={isLoading}
@@ -117,11 +117,13 @@ export function InnerForm({
                         id: 'env',
                         label: 'Env',
                         children: (
-                          <EnvironmentVariablesFieldset
-                            values={values.env}
-                            onChange={(value) => setFieldValue('env', value)}
-                            errors={errors.env}
-                          />
+                          <div className="form-group">
+                            <EnvironmentVariablesFieldset
+                              values={values.env}
+                              onChange={(value) => setFieldValue('env', value)}
+                              errors={errors.env}
+                            />
+                          </div>
                         ),
                       },
                       {

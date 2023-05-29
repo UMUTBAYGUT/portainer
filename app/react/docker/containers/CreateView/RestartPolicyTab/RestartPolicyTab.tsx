@@ -13,7 +13,7 @@ export function RestartPolicyTab({
   onChange: (values: RestartPolicy) => void;
 }) {
   return (
-    <FormControl label="Restart Policy" size="xsmall">
+    <FormControl label="Restart Policy">
       <ButtonSelector
         options={[
           { label: 'Never', value: 'no' },
