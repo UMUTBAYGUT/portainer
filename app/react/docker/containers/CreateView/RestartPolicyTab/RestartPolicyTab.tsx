@@ -16,10 +16,10 @@ export function RestartPolicyTab({
     <FormControl label="Restart Policy">
       <ButtonSelector
         options={[
-          { label: 'Never', value: 'no' },
-          { label: 'Always', value: 'always' },
-          { label: 'On failure', value: 'on-failure' },
-          { label: 'Unless stopped', value: 'unless-stopped' },
+          { label: 'Never', value: RestartPolicy.No },
+          { label: 'Always', value: RestartPolicy.Always },
+          { label: 'On failure', value: RestartPolicy.OnFailure },
+          { label: 'Unless stopped', value: RestartPolicy.UnlessStopped },
         ]}
         value={values}
         onChange={onChange}

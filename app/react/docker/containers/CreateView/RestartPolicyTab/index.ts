@@ -1,3 +1,4 @@
 export { RestartPolicyTab } from './RestartPolicyTab';
 export { validation as restartPolicyTabValidation } from './validation';
-export { type RestartPolicy } from './types';
+export { RestartPolicy } from './types';
+export { parseViewModel as parseRestartPolicyTabViewModel } from './parseViewModel';

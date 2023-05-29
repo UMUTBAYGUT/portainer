@@ -28,7 +28,10 @@ import {
   parseResourcesTabViewModel,
   getDefaultResourcesTabViewModel,
 } from '@/react/docker/containers/CreateView/ResourcesTab';
-import { RestartPolicy } from '@/react/docker/containers/CreateView/RestartPolicyTab';
+import {
+  RestartPolicy,
+  parseRestartPolicyTabViewModel,
+} from '@/react/docker/containers/CreateView/RestartPolicyTab';
 import {
   VolumesTabValues,
   parseVolumesTabViewModel,
@@ -137,7 +140,7 @@ export function useInitialValues(submitting: boolean) {
     volumes: parseVolumesTabViewModel(fromContainer),
     network,
     labels: parseLabelsTabViewModel(fromContainer),
-    restartPolicy: fromContainer?.HostConfig?.RestartPolicy?.Name || 'no',
+    restartPolicy: parseRestartPolicyTabViewModel(fromContainer),
     resources: parseResourcesTabViewModel(fromContainer),
     capabilities: parseCapabilitiesTabViewModel(fromContainer),
     nodeName,
@@ -161,7 +164,7 @@ function defaultValues(
     volumes: [],
     network: getDefaultNetworkTabViewModel(hasBridgeNetwork),
     labels: [],
-    restartPolicy: 'no',
+    restartPolicy: RestartPolicy.No,
     resources: getDefaultResourcesTabViewModel(),
     capabilities: getDefaultCapabilitiesTabViewModel(),
     nodeName,

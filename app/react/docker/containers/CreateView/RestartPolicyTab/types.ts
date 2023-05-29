@@ -1,1 +1,7 @@
-export type RestartPolicy = 'no' | 'always' | 'on-failure' | 'unless-stopped';
+// Enum version of RestartPolicy
+export enum RestartPolicy {
+  No = 'no',
+  Always = 'always',
+  OnFailure = 'on-failure',
+  UnlessStopped = 'unless-stopped',
+}

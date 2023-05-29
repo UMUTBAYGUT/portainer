@@ -4,6 +4,6 @@ import { RestartPolicy } from './types';
 
 export function validation(): SchemaOf<RestartPolicy> {
   return mixed<RestartPolicy>()
-    .oneOf(['no', 'always', 'on-failure', 'unless-stopped'])
-    .default('no') as SchemaOf<RestartPolicy>;
+    .oneOf(Object.values(RestartPolicy))
+    .default(RestartPolicy.No) as SchemaOf<RestartPolicy>;
 }
