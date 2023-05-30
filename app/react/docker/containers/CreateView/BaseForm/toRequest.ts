@@ -3,7 +3,7 @@ import { CreateContainerRequest } from '../types';
 import { Values } from './BaseForm';
 import { parsePortBindingRequest } from './PortsMappingField.requestModel';
 
-export function parseRequest(
+export function toRequest(
   oldConfig: CreateContainerRequest,
   values: Values
 ): CreateContainerRequest {

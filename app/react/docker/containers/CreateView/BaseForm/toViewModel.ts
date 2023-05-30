@@ -4,30 +4,19 @@ import { UserId } from '@/portainer/users/types';
 
 import { ContainerResponse } from '../../queries/container';
 
-import { parseViewModel as parsePortsViewModel } from './PortsMappingField.viewModel';
+import { toViewModel as parsePortsViewModel } from './PortsMappingField.viewModel';
 import { Values } from './BaseForm';
 
-export function parseViewModel(
+export function toViewModel(
   isAdmin: boolean,
   currentUserId: UserId,
-  config?: ContainerResponse
+  config: ContainerResponse
 ): Omit<Values, 'enableWebhook' | 'image' | 'nodeName'> {
   // accessControl shouldn't be copied to new container
 
   const accessControl = parseAccessControlFormData(isAdmin, currentUserId);
 
-  if (!config) {
-    return {
-      accessControl,
-      name: '',
-      alwaysPull: true,
-      autoRemove: false,
-      ports: [],
-      publishAllPorts: false,
-    };
-  }
-
-  if (config?.Portainer?.ResourceControl?.Public) {
+  if (config.Portainer?.ResourceControl?.Public) {
     accessControl.ownership = ResourceControlOwnership.PUBLIC;
   }
 
@@ -38,5 +27,21 @@ export function parseViewModel(
     autoRemove: config.HostConfig?.AutoRemove || false,
     ports: parsePortsViewModel(config.HostConfig?.PortBindings || {}),
     publishAllPorts: config.HostConfig?.PublishAllPorts || false,
+  };
+}
+
+export function getDefaultViewModel(
+  isAdmin: boolean,
+  currentUserId: UserId
+): Omit<Values, 'enableWebhook' | 'image' | 'nodeName'> {
+  const accessControl = parseAccessControlFormData(isAdmin, currentUserId);
+
+  return {
+    accessControl,
+    name: '',
+    alwaysPull: true,
+    autoRemove: false,
+    ports: [],
+    publishAllPorts: false,
   };
 }

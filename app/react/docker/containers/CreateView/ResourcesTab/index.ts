@@ -1,10 +1,15 @@
+import { validation } from './validation';
+import { toRequest } from './toRequest';
+import { toViewModel, getDefaultViewModel } from './toViewModel';
+
 export {
   ResourcesTab,
   type Values as ResourcesTabValues,
 } from './ResourcesTab';
-export {
-  parseViewModel as parseResourcesTabViewModel,
-  getDefaultViewModel as getDefaultResourcesTabViewModel,
-} from './parseViewModel';
-export { parseRequest as parseResourcesTabRequest } from './parseRequest';
-export { validation as resourcesTabValidation } from './validation';
+
+export const resourcesTabUtils = {
+  toRequest,
+  toViewModel,
+  validation,
+  getDefaultViewModel,
+};

@@ -103,7 +103,7 @@ function SliderWithInput({
   );
 }
 
-export function parseRequest(
+export function toRequest(
   oldConfig: CreateContainerRequest['HostConfig'],
   values: Values
 ): CreateContainerRequest['HostConfig'] {

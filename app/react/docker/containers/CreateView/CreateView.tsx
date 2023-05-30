@@ -2,13 +2,6 @@ import { Formik } from 'formik';
 import { useRouter } from '@uirouter/react';
 import { useEffect, useState } from 'react';
 
-import { parseBaseFormRequest } from '@/react/docker/containers/CreateView/BaseForm';
-import { parseCapabilitiesTabRequest } from '@/react/docker/containers/CreateView/CapabilitiesTab';
-import { parseCommandsTabRequest } from '@/react/docker/containers/CreateView/CommandsTab';
-import { parseLabelsTabRequest } from '@/react/docker/containers/CreateView/LabelsTab';
-import { parseNetworkTabRequest } from '@/react/docker/containers/CreateView/NetworkTab';
-import { parseResourcesTabRequest } from '@/react/docker/containers/CreateView/ResourcesTab';
-import { parseVolumesTabRequest } from '@/react/docker/containers/CreateView/VolumesTab';
 import { useCurrentUser } from '@/react/hooks/useUser';
 import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
 import { useCurrentEnvironment } from '@/react/hooks/useCurrentEnvironment';
@@ -19,23 +12,20 @@ import { useAnalytics } from '@/react/hooks/useAnalytics';
 import { useDebouncedValue } from '@/react/hooks/useDebouncedValue';
 
 import { PageHeader } from '@@/PageHeader';
-import { convertToArrayOfStrings } from '@@/form-components/EnvironmentVariablesFieldset/utils';
 import { ImageConfigValues } from '@@/ImageConfigFieldset';
 import { confirmDestructive } from '@@/modals/confirm';
 import { buildConfirmButton } from '@@/modals/utils';
 import { InformationPanel } from '@@/InformationPanel';
 import { TextTip } from '@@/Tip/TextTip';
 
-import { buildImageFullURI } from '../../images/utils';
 import { useContainers } from '../queries/containers';
 import { useSystemLimits } from '../../proxy/queries/useInfo';
 
-import { CreateContainerRequest } from './types';
-import { parseRestartPolicyTabRequest } from './RestartPolicyTab/RestartPolicyTab';
 import { useCreateOrReplaceMutation } from './useCreateMutation';
 import { validation } from './validation';
 import { useInitialValues, Values } from './useInitialValues';
 import { InnerForm } from './InnerForm';
+import { toRequest } from './toRequest';
 
 export function CreateView() {
   return (
@@ -142,7 +132,7 @@ function CreateForm() {
     }
 
     const registry = getRegistry(values.image, registriesQuery.data || []);
-    const config = buildConfig(values, registry);
+    const config = toRequest(values, registry);
 
     mutation.mutate(
       { config, environment, values, registry, oldContainer, extraNetworks },
@@ -167,56 +157,6 @@ function CreateForm() {
       });
     }
   }
-}
-
-function buildConfig(values: Values, registry?: Registry) {
-  let config: CreateContainerRequest = {
-    Image: '',
-    Env: [],
-    MacAddress: '',
-    ExposedPorts: {},
-    WorkingDir: '',
-    User: '',
-    HostConfig: {
-      RestartPolicy: {
-        Name: 'no',
-      },
-      PortBindings: {},
-      PublishAllPorts: false,
-      Binds: [],
-      AutoRemove: false,
-      NetworkMode: 'bridge',
-      Privileged: false,
-      Init: false,
-      ExtraHosts: [],
-      Devices: [],
-      DeviceRequests: [],
-      CapAdd: [],
-      CapDrop: [],
-      Sysctls: {},
-      LogConfig: {
-        Type: 'none',
-        Config: {},
-      },
-    },
-    NetworkingConfig: {
-      EndpointsConfig: {},
-    },
-    Labels: {},
-  };
-
-  config = parseCommandsTabRequest(config, values.commands);
-  config = parseVolumesTabRequest(config, values.volumes);
-  config = parseNetworkTabRequest(config, values.network, '');
-  config = parseLabelsTabRequest(config, values.labels);
-  config = parseRestartPolicyTabRequest(config, values.restartPolicy);
-  config = parseResourcesTabRequest(config, values.resources);
-  config = parseCapabilitiesTabRequest(config, values.capabilities);
-  config = parseBaseFormRequest(config, values);
-  config.Env = convertToArrayOfStrings(values.env);
-  config.Image = buildImageFullURI(values.image.image, registry);
-
-  return config;
 }
 
 function getRegistry(image: ImageConfigValues, registries: Registry[]) {

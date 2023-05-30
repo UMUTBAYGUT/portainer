@@ -254,9 +254,7 @@ export function Gpu({
   );
 }
 
-export function parseViewModel(
-  deviceRequests: Array<DeviceRequest> = []
-): Values {
+export function toViewModel(deviceRequests: Array<DeviceRequest> = []): Values {
   const deviceRequest = deviceRequests.find(
     (o) => o.Driver === 'nvidia' || o.Capabilities?.[0]?.[0] === 'gpu'
   );
@@ -279,7 +277,7 @@ export function parseViewModel(
   };
 }
 
-export function parseRequest(
+export function toRequest(
   deviceRequests: Array<DeviceRequest>,
   gpu: Values
 ): Array<DeviceRequest> {

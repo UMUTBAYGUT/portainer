@@ -8,7 +8,7 @@ export type Range = {
   end: number;
 };
 
-export function parseViewModel(portBindings: PortMap): Values {
+export function toViewModel(portBindings: PortMap): Values {
   const parsedPorts = parsePorts(portBindings);
   const sortedPorts = sortPorts(parsedPorts);
 

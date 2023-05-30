@@ -1,11 +1,11 @@
 import { CreateContainerRequest } from '../types';
 
-import { parseRequest as parseGPURequest } from './Gpu';
+import { toRequest as parseGPURequest } from './Gpu';
 import { toConfigMemory } from './memory-utils';
 import { Values } from './ResourcesTab';
-import { parseRequest as parseResourcesRequest } from './ResourcesFieldset';
+import { toRequest as parseResourcesRequest } from './ResourcesFieldset';
 
-export function parseRequest(
+export function toRequest(
   oldConfig: CreateContainerRequest,
   values: Values
 ): CreateContainerRequest {

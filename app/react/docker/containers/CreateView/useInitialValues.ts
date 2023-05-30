@@ -2,39 +2,35 @@ import { useCurrentStateAndParams } from '@uirouter/react';
 
 import {
   BaseFormValues,
-  parseBaseFormViewModel,
+  baseFormUtils,
 } from '@/react/docker/containers/CreateView/BaseForm';
 import {
   CapabilitiesTabValues,
-  getDefaultCapabilitiesTabViewModel,
-  parseCapabilitiesTabViewModel,
+  capabilitiesTabUtils,
 } from '@/react/docker/containers/CreateView/CapabilitiesTab';
 import {
   CommandsTabValues,
-  getDefaultCommandsTabViewModel,
-  parseCommandsTabViewModel,
+  commandsTabUtils,
 } from '@/react/docker/containers/CreateView/CommandsTab';
 import {
   LabelsTabValues,
-  parseLabelsTabViewModel,
+  labelsTabUtils,
 } from '@/react/docker/containers/CreateView/LabelsTab';
 import {
-  getDefaultNetworkTabViewModel,
   NetworkTabValues,
-  parseNetworkTabViewModel,
+  networkTabUtils,
 } from '@/react/docker/containers/CreateView/NetworkTab';
 import {
   ResourcesTabValues,
-  parseResourcesTabViewModel,
-  getDefaultResourcesTabViewModel,
+  resourcesTabUtils,
 } from '@/react/docker/containers/CreateView/ResourcesTab';
 import {
   RestartPolicy,
-  parseRestartPolicyTabViewModel,
+  restartPolicyTabUtils,
 } from '@/react/docker/containers/CreateView/RestartPolicyTab';
 import {
   VolumesTabValues,
-  parseVolumesTabViewModel,
+  volumesTabUtils,
 } from '@/react/docker/containers/CreateView/VolumesTab';
 import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
 import { useCurrentUser } from '@/react/hooks/useUser';
@@ -114,7 +110,7 @@ export function useInitialValues(submitting: boolean) {
     return null;
   }
 
-  const network = parseNetworkTabViewModel(
+  const network = networkTabUtils.toViewModel(
     fromContainer,
     networksQuery.data,
     runningContainersQuery.data
@@ -136,18 +132,18 @@ export function useInitialValues(submitting: boolean) {
     : getDefaultImageConfig();
 
   const initialValues: Values = {
-    commands: parseCommandsTabViewModel(fromContainer),
-    volumes: parseVolumesTabViewModel(fromContainer),
+    commands: commandsTabUtils.toViewModel(fromContainer),
+    volumes: volumesTabUtils.toViewModel(fromContainer),
     network,
-    labels: parseLabelsTabViewModel(fromContainer),
-    restartPolicy: parseRestartPolicyTabViewModel(fromContainer),
-    resources: parseResourcesTabViewModel(fromContainer),
-    capabilities: parseCapabilitiesTabViewModel(fromContainer),
+    labels: labelsTabUtils.toViewModel(fromContainer),
+    restartPolicy: restartPolicyTabUtils.toViewModel(fromContainer),
+    resources: resourcesTabUtils.toViewModel(fromContainer),
+    capabilities: capabilitiesTabUtils.toViewModel(fromContainer),
     nodeName,
     image: imageConfig,
     enableWebhook: webhookQuery.data ? webhookQuery.data.length > 0 : false,
     env: parseArrayOfStrings(fromContainer?.Config?.Env),
-    ...parseBaseFormViewModel(isAdmin, user.Id, fromContainer),
+    ...baseFormUtils.toViewModel(isAdmin, user.Id, fromContainer),
   };
 
   return { initialValues, isDuplicating: !!from, extraNetworks };
@@ -160,17 +156,17 @@ function defaultValues(
   nodeName: string
 ): Values {
   return {
-    commands: getDefaultCommandsTabViewModel(),
-    volumes: [],
-    network: getDefaultNetworkTabViewModel(hasBridgeNetwork),
-    labels: [],
-    restartPolicy: RestartPolicy.No,
-    resources: getDefaultResourcesTabViewModel(),
-    capabilities: getDefaultCapabilitiesTabViewModel(),
+    commands: commandsTabUtils.getDefaultViewModel(),
+    volumes: volumesTabUtils.getDefaultViewModel(),
+    network: networkTabUtils.getDefaultViewModel(hasBridgeNetwork),
+    labels: labelsTabUtils.getDefaultViewModel(),
+    restartPolicy: restartPolicyTabUtils.getDefaultViewModel(),
+    resources: resourcesTabUtils.getDefaultViewModel(),
+    capabilities: capabilitiesTabUtils.getDefaultViewModel(),
     nodeName,
     image: getDefaultImageConfig(),
     enableWebhook: false,
     env: [],
-    ...parseBaseFormViewModel(isAdmin, currentUserId),
+    ...baseFormUtils.getDefaultViewModel(isAdmin, currentUserId),
   };
 }

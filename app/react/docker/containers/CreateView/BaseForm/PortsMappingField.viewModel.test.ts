@@ -1,8 +1,8 @@
-import { parseViewModel } from './PortsMappingField.viewModel';
+import { toViewModel } from './PortsMappingField.viewModel';
 
 test('basic', () => {
   expect(
-    parseViewModel({
+    toViewModel({
       '22/tcp': [
         {
           HostIp: '',
@@ -32,7 +32,7 @@ test('basic', () => {
 
 test('simple combine ports', () => {
   expect(
-    parseViewModel({
+    toViewModel({
       '81/tcp': [
         {
           HostIp: '',
@@ -57,7 +57,7 @@ test('simple combine ports', () => {
 
 test('combine and sort', () => {
   expect(
-    parseViewModel({
+    toViewModel({
       '3244/tcp': [
         {
           HostIp: '',

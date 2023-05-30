@@ -1,4 +1,12 @@
+import { getDefaultViewModel, toViewModel } from './toViewModel';
+import { toRequest } from './toRequest';
+import { validation } from './validation';
+
 export { BaseForm, type Values as BaseFormValues } from './BaseForm';
-export { parseViewModel as parseBaseFormViewModel } from './parseViewModel';
-export { parseRequest as parseBaseFormRequest } from './parseRequest';
-export { validation as baseFormValidation } from './validation';
+
+export const baseFormUtils = {
+  toRequest,
+  toViewModel,
+  validation,
+  getDefaultViewModel,
+};

@@ -2,7 +2,7 @@ import { array, object, SchemaOf, string } from 'yup';
 
 import { Values } from './types';
 
-export function networkTabValidation(): SchemaOf<Values> {
+export function validation(): SchemaOf<Values> {
   return object({
     networkMode: string().default(''),
     hostname: string().default(''),

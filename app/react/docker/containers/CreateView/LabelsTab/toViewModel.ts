@@ -2,7 +2,7 @@ import { ContainerJSON } from '../../queries/container';
 
 import { Values } from './types';
 
-export function parseViewModel(config?: ContainerJSON): Values {
+export function toViewModel(config: ContainerJSON): Values {
   if (!config || !config.Config || !config.Config.Labels) {
     return [];
   }
@@ -11,4 +11,8 @@ export function parseViewModel(config?: ContainerJSON): Values {
     name,
     value,
   }));
+}
+
+export function getDefaultViewModel(): Values {
+  return [];
 }

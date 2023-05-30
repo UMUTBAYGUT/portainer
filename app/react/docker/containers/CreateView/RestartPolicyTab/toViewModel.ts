@@ -2,7 +2,7 @@ import { ContainerJSON } from '../../queries/container';
 
 import { RestartPolicy } from './types';
 
-export function parseViewModel(config: ContainerJSON): RestartPolicy {
+export function toViewModel(config: ContainerJSON): RestartPolicy {
   switch (config.HostConfig?.RestartPolicy?.Name) {
     case 'always':
       return RestartPolicy.Always;
@@ -14,4 +14,8 @@ export function parseViewModel(config: ContainerJSON): RestartPolicy {
     default:
       return RestartPolicy.No;
   }
+}
+
+export function getDefaultViewModel(): RestartPolicy {
+  return RestartPolicy.No;
 }

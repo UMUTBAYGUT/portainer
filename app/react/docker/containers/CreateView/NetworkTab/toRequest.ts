@@ -2,7 +2,7 @@ import { CreateContainerRequest } from '../types';
 
 import { Values } from './types';
 
-export function parseRequest(
+export function toRequest(
   oldConfig: CreateContainerRequest,
   values: Values,
   fromContainerId: string

@@ -1,4 +1,13 @@
+import { validation } from './validation';
+import { toViewModel, getDefaultViewModel } from './toViewModel';
+import { toRequest } from './toRequest';
+
 export { RestartPolicyTab } from './RestartPolicyTab';
-export { validation as restartPolicyTabValidation } from './validation';
 export { RestartPolicy } from './types';
-export { parseViewModel as parseRestartPolicyTabViewModel } from './parseViewModel';
+
+export const restartPolicyTabUtils = {
+  toViewModel,
+  toRequest,
+  validation,
+  getDefaultViewModel,
+};

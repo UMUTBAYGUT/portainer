@@ -3,7 +3,7 @@ import { CreateContainerRequest } from '@/react/docker/containers/CreateView/typ
 import { capabilities } from './types';
 import { Values } from './CapabilitiesTab';
 
-export function parseRequest(
+export function toRequest(
   oldConfig: CreateContainerRequest,
   values: Values
 ): CreateContainerRequest {

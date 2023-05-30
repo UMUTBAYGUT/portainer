@@ -8,7 +8,7 @@ import { ConsoleConfig, ConsoleSetting } from './ConsoleSettings';
 import { LogConfig } from './LoggerConfig';
 import { Values } from './types';
 
-export function parseViewModel(config: ContainerJSON): Values {
+export function toViewModel(config: ContainerJSON): Values {
   return {
     cmd: config.Config?.Cmd ? commandArrayToString(config.Config?.Cmd) : null,
     entrypoint: config.Config?.Entrypoint

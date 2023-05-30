@@ -1,11 +1,11 @@
 import { ContainerJSON } from '../../queries/container';
 
 import { parseDevicesViewModel } from './DevicesField';
-import { parseViewModel as parseGpuViewModel } from './Gpu';
+import { toViewModel as parseGpuViewModel } from './Gpu';
 import { toViewModelCpu, toViewModelMemory } from './memory-utils';
 import { Values } from './ResourcesTab';
 
-export function parseViewModel(config: ContainerJSON): Values {
+export function toViewModel(config: ContainerJSON): Values {
   return {
     runtime: {
       privileged: config.HostConfig?.Privileged || false,
