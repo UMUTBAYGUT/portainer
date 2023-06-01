@@ -4,7 +4,7 @@ import { UserId } from '@/portainer/users/types';
 
 import { ContainerResponse } from '../../queries/container';
 
-import { toViewModel as parsePortsViewModel } from './PortsMappingField.viewModel';
+import { toViewModel as toPortsMappingViewModel } from './PortsMappingField.viewModel';
 import { Values } from './BaseForm';
 
 export function toViewModel(
@@ -25,7 +25,7 @@ export function toViewModel(
     name: config.Name ? config.Name.replace('/', '') : '',
     alwaysPull: true,
     autoRemove: config.HostConfig?.AutoRemove || false,
-    ports: parsePortsViewModel(config.HostConfig?.PortBindings || {}),
+    ports: toPortsMappingViewModel(config.HostConfig?.PortBindings || {}),
     publishAllPorts: config.HostConfig?.PublishAllPorts || false,
   };
 }

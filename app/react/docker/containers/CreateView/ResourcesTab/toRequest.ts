@@ -1,9 +1,9 @@
 import { CreateContainerRequest } from '../types';
 
-import { toRequest as parseGPURequest } from './Gpu';
+import { toRequest as toGPURequest } from './Gpu';
 import { toConfigMemory } from './memory-utils';
 import { Values } from './ResourcesTab';
-import { toRequest as parseResourcesRequest } from './ResourcesFieldset';
+import { toRequest as toResourcesRequest } from './ResourcesFieldset';
 
 export function toRequest(
   oldConfig: CreateContainerRequest,
@@ -12,7 +12,7 @@ export function toRequest(
   return {
     ...oldConfig,
     HostConfig: {
-      ...parseResourcesRequest(oldConfig.HostConfig, values.resources),
+      ...toResourcesRequest(oldConfig.HostConfig, values.resources),
       ...oldConfig.HostConfig,
       Privileged: values.runtime.privileged,
       Init: values.runtime.init,
@@ -26,7 +26,7 @@ export function toRequest(
         values.sysctls.map((sysctl) => [sysctl.name, sysctl.value])
       ),
       ShmSize: toConfigMemory(values.sharedMemorySize),
-      DeviceRequests: parseGPURequest(
+      DeviceRequests: toGPURequest(
         oldConfig.HostConfig.DeviceRequests || [],
         values.gpu
       ),

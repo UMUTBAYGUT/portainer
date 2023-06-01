@@ -100,13 +100,13 @@ async function getContainer(
     const { data } = await axios.get<ContainerResponse>(
       urlBuilder(environmentId, containerId, 'json')
     );
-    return parseViewModel(data);
+    return toViewModel(data);
   } catch (error) {
     throw parseAxiosError(error as Error, 'Unable to retrieve container');
   }
 }
 
-export function parseViewModel(response: ContainerResponse) {
+export function toViewModel(response: ContainerResponse) {
   const resourceControl =
     response.Portainer?.ResourceControl &&
     new ResourceControlViewModel(response?.Portainer?.ResourceControl);

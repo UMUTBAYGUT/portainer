@@ -1,7 +1,7 @@
 import { ContainerJSON } from '../../queries/container';
 
-import { parseDevicesViewModel } from './DevicesField';
-import { toViewModel as parseGpuViewModel } from './Gpu';
+import { toDevicesViewModel } from './DevicesField';
+import { toViewModel as toGpuViewModel } from './Gpu';
 import { toViewModelCpu, toViewModelMemory } from './memory-utils';
 import { Values } from './ResourcesTab';
 
@@ -12,14 +12,14 @@ export function toViewModel(config: ContainerJSON): Values {
       init: config.HostConfig?.Init || false,
       type: config.HostConfig?.Runtime || '',
     },
-    devices: parseDevicesViewModel(config.HostConfig?.Devices || []),
+    devices: toDevicesViewModel(config.HostConfig?.Devices || []),
     sysctls: Object.entries(config.HostConfig?.Sysctls || {}).map(
       ([name, value]) => ({
         name,
         value,
       })
     ),
-    gpu: parseGpuViewModel(config.HostConfig?.DeviceRequests || []),
+    gpu: toGpuViewModel(config.HostConfig?.DeviceRequests || []),
     sharedMemorySize: toViewModelMemory(config.HostConfig?.ShmSize),
     resources: {
       cpu: toViewModelCpu(config.HostConfig?.NanoCpus),
@@ -39,7 +39,7 @@ export function getDefaultViewModel(): Values {
     devices: [],
     sysctls: [],
     sharedMemorySize: 64,
-    gpu: parseGpuViewModel(),
+    gpu: toGpuViewModel(),
     resources: {
       reservation: 0,
       limit: 0,

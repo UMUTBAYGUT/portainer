@@ -9,7 +9,7 @@ import { withGlobalError } from '@/react-tools/react-query';
 
 import { urlBuilder } from '../containers.service';
 import { DockerContainerResponse } from '../types/response';
-import { parseListViewModel } from '../utils';
+import { toListViewModel } from '../utils';
 import { DockerContainer } from '../types';
 
 import { Filters } from './types';
@@ -64,7 +64,7 @@ export async function getContainers(
           : undefined,
       }
     );
-    return data.map((c) => parseListViewModel(c));
+    return data.map((c) => toListViewModel(c));
   } catch (error) {
     throw parseAxiosError(error as Error, 'Unable to retrieve containers');
   }

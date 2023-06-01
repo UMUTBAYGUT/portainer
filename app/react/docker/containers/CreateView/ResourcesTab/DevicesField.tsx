@@ -72,7 +72,7 @@ export function devicesValidation(): SchemaOf<Values> {
   );
 }
 
-export function parseDevicesViewModel(devices: Array<DeviceMapping>): Values {
+export function toDevicesViewModel(devices: Array<DeviceMapping>): Values {
   return devices.filter(hasPath).map((device) => ({
     pathOnHost: device.PathOnHost,
     pathInContainer: device.PathInContainer,
