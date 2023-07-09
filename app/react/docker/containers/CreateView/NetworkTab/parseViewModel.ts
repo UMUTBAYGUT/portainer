@@ -1,33 +1,30 @@
+import { DockerNetwork } from '@/react/docker/networks/types';
+
 import { ContainerJSON } from '../../queries/container';
 import { DockerContainer } from '../../types';
 
 import { Values } from './types';
 
+export function getDefaultViewModel(hasBridgeNetwork: boolean) {
+  return {
+    networkMode: hasBridgeNetwork ? 'bridge' : 'nat',
+    hostname: '',
+    domain: '',
+    macAddress: '',
+    ipv4Address: '',
+    ipv6Address: '',
+    primaryDns: '',
+    secondaryDns: '',
+    hostsFileEntries: [],
+    container: '',
+  };
+}
+
 export function parseViewModel(
-  config?: ContainerJSON,
-  hasBridgeNetwork = false,
+  config: ContainerJSON,
+  networks: Array<DockerNetwork>,
   runningContainers: Array<DockerContainer> = []
 ): Values {
-  if (
-    !config ||
-    !config.HostConfig ||
-    !config.NetworkSettings ||
-    !config.Config
-  ) {
-    return {
-      networkMode: 'bridge',
-      hostname: '',
-      domain: '',
-      macAddress: '',
-      ipv4Address: '',
-      ipv6Address: '',
-      primaryDns: '',
-      secondaryDns: '',
-      hostsFileEntries: [],
-      container: '',
-    };
-  }
-
   const dns = config.HostConfig?.Dns;
   const [primaryDns = '', secondaryDns = ''] = dns || [];
 
@@ -35,7 +32,7 @@ export function parseViewModel(
 
   const [networkMode, container = ''] = getNetworkMode(
     config,
-    hasBridgeNetwork,
+    networks,
     runningContainers
   );
 
@@ -51,8 +48,8 @@ export function parseViewModel(
 
   return {
     networkMode,
-    hostname: config.Config.Hostname || '',
-    domain: config.Config.Domainname || '',
+    hostname: config.Config?.Hostname || '',
+    domain: config.Config?.Domainname || '',
     macAddress,
     ipv4Address,
     ipv6Address,
@@ -65,7 +62,7 @@ export function parseViewModel(
 
 function getNetworkMode(
   config: ContainerJSON,
-  hasBridgeNetwork: boolean,
+  networks: Array<DockerNetwork>,
   runningContainers: Array<DockerContainer> = []
 ) {
   let networkMode = config.HostConfig?.NetworkMode || '';
@@ -76,17 +73,23 @@ function getNetworkMode(
     }
   }
 
-  if (!networkMode) {
-    return ['bridge'] as const;
+  // has no network, or connected to a missing network
+  if (
+    !networkMode ||
+    networkMode === 'default' ||
+    networks.every((n) => n.Name !== networkMode)
+  ) {
+    networkMode = 'bridge';
   }
 
-  if (networkMode === 'default') {
-    networkMode = 'bridge';
-    if (!hasBridgeNetwork) {
-      networkMode = 'nat';
-    }
+  // no bridge network
+  if (networks.every((n) => n.Name !== networkMode)) {
+    networkMode = 'nat';
+  }
 
-    return [networkMode] as const;
+  // no nat network
+  if (networks.every((n) => n.Name !== networkMode)) {
+    networkMode = networks[0].Name;
   }
 
   if (networkMode.indexOf('container:') === 0) {

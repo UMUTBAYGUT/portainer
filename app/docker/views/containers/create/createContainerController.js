@@ -8,7 +8,7 @@ import { FeatureId } from '@/react/portainer/feature-flags/enums';
 import { buildConfirmButton } from '@@/modals/utils';
 
 import { commandsTabUtils } from '@/react/docker/containers/CreateView/CommandsTab';
-import { parseNetworkTabRequest, parseNetworkTabViewModel } from '@/react/docker/containers/CreateView/NetworkTab';
+import { parseNetworkTabRequest, parseNetworkTabViewModel, getDefaultNetworkTabViewModel } from '@/react/docker/containers/CreateView/NetworkTab';
 import { ContainerCapabilities, ContainerCapability } from '@/docker/models/containerCapabilities';
 import { AccessControlFormData } from '@/portainer/components/accessControlForm/porAccessControlFormModel';
 import { ContainerDetailsViewModel } from '@/docker/models/container';
@@ -96,7 +96,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       Sysctls: [],
       RegistryModel: new PorImageRegistryModel(),
       commands: commandsTabUtils.getDefaultViewModel(),
-      network: parseNetworkTabViewModel(),
+      network: getDefaultNetworkTabViewModel(),
     };
 
     $scope.state = {
@@ -585,11 +585,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
           $scope.config = ContainerHelper.configFromContainer(angular.copy(d));
 
           $scope.formValues.commands = commandsTabUtils.toViewModel(d);
-          $scope.formValues.network = parseNetworkTabViewModel(
-            d,
-            $scope.availableNetworks.find((n) => n.Name === 'bridge'),
-            $scope.runningContainers
-          );
+          $scope.formValues.network = parseNetworkTabViewModel(d, $scope.availableNetworks, $scope.runningContainers);
 
           loadFromContainerPortBindings(d);
           loadFromContainerVolumes(d);
