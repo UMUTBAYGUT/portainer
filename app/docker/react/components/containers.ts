@@ -26,6 +26,10 @@ import {
   RestartPolicyTab,
   restartPolicyTabValidation,
 } from '@/react/docker/containers/CreateView/RestartPolicyTab';
+import {
+  ResourcesTab,
+  resourcesTabValidation,
+} from '@/react/docker/containers/CreateView/ResourcesTab';
 
 const ngModule = angular.module(
   'portainer.docker.react.components.containers',
@@ -72,4 +76,20 @@ withFormValidation(
   'dockerCreateContainerRestartPolicyTab',
   [],
   restartPolicyTabValidation
+);
+
+withFormValidation(
+  ngModule,
+  withUIRouter(withReactQuery(ResourcesTab)),
+  'dockerCreateContainerResourcesTab',
+  [
+    'allowPrivilegedMode',
+    'isDevicesFieldVisible',
+    'isInitFieldVisible',
+    'isSysctlFieldVisible',
+    'isEdit',
+    'isImageInvalid',
+    'onUpdateLimits',
+  ],
+  resourcesTabValidation
 );
