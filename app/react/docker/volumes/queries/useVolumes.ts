@@ -1,5 +1,5 @@
 import { useQuery } from 'react-query';
-import { Volume } from 'docker-types/generated/1.42';
+import { Volume } from 'docker-types/generated/1.41';
 
 import axios, { parseAxiosError } from '@/portainer/services/axios';
 import { buildUrl as buildDockerUrl } from '@/react/docker/proxy/queries/build-url';
