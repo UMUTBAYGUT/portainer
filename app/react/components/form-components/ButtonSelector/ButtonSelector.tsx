@@ -22,7 +22,7 @@ interface Props<T> {
   'aria-label'?: string;
 }
 
-export function ButtonSelector<T extends string | number>({
+export function ButtonSelector<T extends string | number | boolean>({
   value,
   onChange,
   size,
@@ -40,7 +40,7 @@ export function ButtonSelector<T extends string | number>({
     >
       {options.map((option) => (
         <OptionItem
-          key={option.value}
+          key={option.value.toString()}
           selected={value === option.value}
           onChange={() => onChange(option.value)}
           disabled={disabled}

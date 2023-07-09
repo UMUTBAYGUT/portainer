@@ -9,6 +9,10 @@ import {
   CommandsTabValues,
   commandsTabValidation,
 } from '@/react/docker/containers/CreateView/CommandsTab';
+import {
+  VolumesTab,
+  volumesTabValidation,
+} from '@/react/docker/containers/CreateView/VolumesTab';
 
 const ngModule = angular.module(
   'portainer.docker.react.components.containers',
@@ -23,4 +27,12 @@ withFormValidation<ComponentProps<typeof CommandsTab>, CommandsTabValues>(
   'dockerCreateContainerCommandsTab',
   ['apiVersion'],
   commandsTabValidation
+);
+
+withFormValidation(
+  ngModule,
+  withUIRouter(withReactQuery(VolumesTab)),
+  'dockerCreateContainerVolumesTab',
+  ['allowBindMounts'],
+  volumesTabValidation
 );
