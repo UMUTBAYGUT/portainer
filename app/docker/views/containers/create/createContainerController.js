@@ -18,7 +18,7 @@ import { ContainerDetailsViewModel } from '@/docker/models/container';
 import { getContainers } from '@/react/docker/containers/queries/containers';
 import './createcontainer.css';
 import { RegistryTypes } from '@/react/portainer/registries/types/registry';
-import { buildImageFullURI } from '@/docker/helpers/imageHelper';
+import { buildImageFullURI } from '@/react/docker/images/utils';
 
 angular.module('portainer.docker').controller('CreateContainerController', [
   '$q',
@@ -284,7 +284,21 @@ angular.module('portainer.docker').controller('CreateContainerController', [
           $scope.formValues.volumes = parseVolumesTabViewModel(d);
 
           $scope.formValues.network = parseNetworkTabViewModel(d, $scope.availableNetworks, $scope.runningContainers);
-          $scope.extraNetworks = Object.fromEntries(Object.entries(d.NetworkSettings.Networks).filter(([n]) => n !== $scope.formValues.network.networkMode));
+          $scope.extraNetworks = Object.fromEntries(
+            Object.entries(d.NetworkSettings.Networks)
+              .filter(([n]) => n !== $scope.formValues.network.networkMode)
+              .map(([networkName, network]) => [
+                networkName,
+                network.Aliases && fromContainer
+                  ? {
+                      ...network,
+                      Aliases: (network.Aliases || []).filter((o) => {
+                        return !fromContainer.Id.startsWith(o);
+                      }),
+                    }
+                  : network,
+              ])
+          );
 
           $scope.formValues.labels = parseLabelsTabViewModel(d);
           $scope.formValues.restartPolicy = d.HostConfig.RestartPolicy.Name;

@@ -29,3 +29,8 @@ export function useVersion<TSelect = SystemVersion>(
     }
   );
 }
+
+export function useApiVersion(environmentId: EnvironmentId) {
+  const query = useVersion(environmentId, (info) => info.ApiVersion);
+  return query.data ? parseFloat(query.data) : 0;
+}

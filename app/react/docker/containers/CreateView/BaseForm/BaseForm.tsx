@@ -1,4 +1,4 @@
-import { FormikErrors } from 'formik';
+import { useFormikContext } from 'formik';
 
 import { useCurrentEnvironment } from '@/react/hooks/useCurrentEnvironment';
 import { Authorized } from '@/react/hooks/useUser';
@@ -50,20 +50,16 @@ function useIsAgentOnSwarm() {
 }
 
 export function BaseForm({
-  values,
-  onChange,
-  errors,
-  setFieldError,
   isValid,
   isLoading,
+  onChangeName,
 }: {
-  values: Values;
-  onChange: (values: Values) => void;
-  errors?: FormikErrors<Values>;
-  setFieldError: (field: string, error: string) => void;
   isValid: boolean;
   isLoading: boolean;
+  onChangeName: (value: string) => void;
 }) {
+  const { setFieldValue, values, errors, setFieldError } =
+    useFormikContext<Values>();
   const environmentQuery = useCurrentEnvironment();
   const isAgentOnSwarm = useIsAgentOnSwarm();
   if (!environmentQuery.data) {
@@ -81,7 +77,11 @@ export function BaseForm({
           <Input
             id="name-input"
             value={values.name}
-            onChange={(e) => onChange({ ...values, name: e.target.value })}
+            onChange={(e) => {
+              const name = e.target.value;
+              onChangeName(name);
+              setFieldValue('name', name);
+            }}
             placeholder="e.g. myContainer"
           />
         </FormControl>
@@ -101,7 +101,9 @@ export function BaseForm({
                   label="Always pull the image"
                   tooltip="When enabled, Portainer will automatically try to pull the specified image before creating the container."
                   checked={values.alwaysPull}
-                  onChange={(alwaysPull) => onChange({ ...values, alwaysPull })}
+                  onChange={(alwaysPull) =>
+                    setFieldValue('alwaysPull', alwaysPull)
+                  }
                 />
               </div>
             </div>
@@ -118,7 +120,7 @@ export function BaseForm({
                     tooltip="Create a webhook (or callback URI) to automate the recreate this container. Sending a POST request to this callback URI (without requiring any authentication) will pull the most up-to-date version of the associated image and recreate this container."
                     checked={values.enableWebhook}
                     onChange={(enableWebhook) =>
-                      onChange({ ...values, enableWebhook })
+                      setFieldValue('enableWebhook', enableWebhook)
                     }
                   />
                 </div>
@@ -135,7 +137,7 @@ export function BaseForm({
                 tooltip="When enabled, Portainer will let Docker automatically map a random port on the host to each one defined in the image Dockerfile."
                 checked={values.publishAllPorts}
                 onChange={(publishAllPorts) =>
-                  onChange({ ...values, publishAllPorts })
+                  setFieldValue('publishAllPorts', publishAllPorts)
                 }
               />
             </div>
@@ -143,7 +145,7 @@ export function BaseForm({
 
           <PortsMappingField
             value={values.ports}
-            onChange={(ports) => onChange({ ...values, ports })}
+            onChange={(ports) => setFieldValue('ports', ports)}
             errors={errors?.ports}
           />
         </FormSection>
@@ -152,13 +154,15 @@ export function BaseForm({
           <FormSection title="Deployment">
             <NodeSelector
               value={values.nodeName}
-              onChange={(nodeName) => onChange({ ...values, nodeName })}
+              onChange={(nodeName) => setFieldValue('nodeName', nodeName)}
             />
           </FormSection>
         )}
 
         <AccessControlForm
-          onChange={(accessControl) => onChange({ ...values, accessControl })}
+          onChange={(accessControl) =>
+            setFieldValue('accessControl', accessControl)
+          }
           errors={errors?.accessControl}
           values={values.accessControl}
         />
@@ -169,7 +173,7 @@ export function BaseForm({
               label="Auto remove"
               tooltip="When enabled, Portainer will automatically remove the container when it exits. This is useful when you want to use the container only once."
               checked={values.autoRemove}
-              onChange={(autoRemove) => onChange({ ...values, autoRemove })}
+              onChange={(autoRemove) => setFieldValue('autoRemove', autoRemove)}
             />
           </div>
         </div>

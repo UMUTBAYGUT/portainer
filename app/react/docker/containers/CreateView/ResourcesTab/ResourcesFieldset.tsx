@@ -1,7 +1,7 @@
 import { FormikErrors } from 'formik';
 import { number, object, SchemaOf } from 'yup';
 
-import { useInfo } from '@/react/docker/proxy/queries/useInfo';
+import { useSystemLimits } from '@/react/docker/proxy/queries/useInfo';
 import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
 
 import { FormControl } from '@@/form-components/FormControl';
@@ -28,7 +28,8 @@ export function ResourceFieldset({
   onChange: (values: Values) => void;
   errors: FormikErrors<Values> | undefined;
 }) {
-  const { maxCpu, maxMemory } = useSystemLimits();
+  const environmentId = useEnvironmentId();
+  const { maxCpu, maxMemory } = useSystemLimits(environmentId);
 
   return (
     <FormSection title="Resources">
@@ -143,16 +144,4 @@ export function resourcesValidation({
       .max(maxCpu, `Value must be between 0 and ${maxCpu}`)
       .default(0),
   });
-}
-
-export function useSystemLimits() {
-  const environmentId = useEnvironmentId();
-  const infoQuery = useInfo(environmentId);
-
-  const maxCpu = infoQuery.data?.NCPU || 32;
-  const maxMemory = infoQuery.data?.MemTotal
-    ? Math.floor(infoQuery.data.MemTotal / 1000 / 1000)
-    : 32768;
-
-  return { maxCpu, maxMemory };
 }

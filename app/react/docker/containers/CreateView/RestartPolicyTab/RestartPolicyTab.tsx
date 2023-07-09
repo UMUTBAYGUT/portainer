@@ -1,6 +1,8 @@
 import { ButtonSelector } from '@@/form-components/ButtonSelector/ButtonSelector';
 import { FormControl } from '@@/form-components/FormControl';
 
+import { CreateContainerRequest } from '../types';
+
 import { RestartPolicy } from './types';
 
 export function RestartPolicyTab({
@@ -24,4 +26,20 @@ export function RestartPolicyTab({
       />
     </FormControl>
   );
+}
+
+export function parseRestartPolicyTabRequest(
+  config: CreateContainerRequest,
+  value: RestartPolicy
+): CreateContainerRequest {
+  return {
+    ...config,
+    HostConfig: {
+      ...config.HostConfig,
+      RestartPolicy: {
+        ...config.HostConfig.RestartPolicy,
+        Name: value,
+      },
+    },
+  };
 }

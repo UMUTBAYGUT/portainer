@@ -15,14 +15,12 @@ import { ContainerSelector } from './ContainerSelector';
 
 export function NetworkTab({
   values,
-  onChange,
+  setFieldValue,
   errors,
-  apiVersion,
 }: {
   values: Values;
-  onChange(values: Values): void;
+  setFieldValue: (field: string, value: unknown) => void;
   errors?: FormikErrors<Values>;
-  apiVersion: number;
 }) {
   // const isSwarm = useIsSwarm(environmentId);
   return (
@@ -41,8 +39,7 @@ export function NetworkTab({
       <FormControl label="Network" errors={errors?.networkMode}>
         <NetworksSelector
           value={values.networkMode}
-          onChange={(networkMode) => handleChange({ networkMode })}
-          apiVersion={apiVersion}
+          onChange={(networkMode) => setFieldValue('networkMode', networkMode)}
         />
       </FormControl>
 
@@ -50,7 +47,7 @@ export function NetworkTab({
         <FormControl label="Container" errors={errors?.container}>
           <ContainerSelector
             value={values.container}
-            onChange={(container) => handleChange({ container })}
+            onChange={(container) => setFieldValue('container', container)}
           />
         </FormControl>
       )}
@@ -58,7 +55,7 @@ export function NetworkTab({
       <FormControl label="Hostname" errors={errors?.hostname}>
         <Input
           value={values.hostname}
-          onChange={(e) => handleChange({ hostname: e.target.value })}
+          onChange={(e) => setFieldValue('hostname', e.target.value)}
           placeholder="e.g. web01"
         />
       </FormControl>
@@ -66,7 +63,7 @@ export function NetworkTab({
       <FormControl label="Domain Name" errors={errors?.domain}>
         <Input
           value={values.domain}
-          onChange={(e) => handleChange({ domain: e.target.value })}
+          onChange={(e) => setFieldValue('domain', e.target.value)}
           placeholder="e.g. example.com"
         />
       </FormControl>
@@ -74,7 +71,7 @@ export function NetworkTab({
       <FormControl label="MAC Address" errors={errors?.macAddress}>
         <Input
           value={values.macAddress}
-          onChange={(e) => handleChange({ macAddress: e.target.value })}
+          onChange={(e) => setFieldValue('macAddress', e.target.value)}
           placeholder="e.g. 12-34-56-78-9a-bc"
         />
       </FormControl>
@@ -82,7 +79,7 @@ export function NetworkTab({
       <FormControl label="IPv4 Address" errors={errors?.ipv4Address}>
         <Input
           value={values.ipv4Address}
-          onChange={(e) => handleChange({ ipv4Address: e.target.value })}
+          onChange={(e) => setFieldValue('ipv4Address', e.target.value)}
           placeholder="e.g. 172.20.0.7"
         />
       </FormControl>
@@ -90,7 +87,7 @@ export function NetworkTab({
       <FormControl label="IPv6 Address" errors={errors?.ipv6Address}>
         <Input
           value={values.ipv6Address}
-          onChange={(e) => handleChange({ ipv6Address: e.target.value })}
+          onChange={(e) => setFieldValue('ipv6Address', e.target.value)}
           placeholder="e.g. a:b:c:d::1234"
         />
       </FormControl>
@@ -98,7 +95,7 @@ export function NetworkTab({
       <FormControl label="Primary DNS Server" errors={errors?.primaryDns}>
         <Input
           value={values.primaryDns}
-          onChange={(e) => handleChange({ primaryDns: e.target.value })}
+          onChange={(e) => setFieldValue('primaryDns', e.target.value)}
           placeholder="e.g. 1.1.1.1, 2606:4700:4700::1111"
         />
       </FormControl>
@@ -106,7 +103,7 @@ export function NetworkTab({
       <FormControl label="Secondary DNS Server" errors={errors?.secondaryDns}>
         <Input
           value={values.secondaryDns}
-          onChange={(e) => handleChange({ secondaryDns: e.target.value })}
+          onChange={(e) => setFieldValue('secondaryDns', e.target.value)}
           placeholder="e.g. 1.0.0.1, 2606:4700:4700::1001"
         />
       </FormControl>
@@ -114,16 +111,15 @@ export function NetworkTab({
       <InputList
         label="Hosts file entries"
         value={values.hostsFileEntries}
-        onChange={(hostsFileEntries) => handleChange({ hostsFileEntries })}
+        onChange={(hostsFileEntries) =>
+          setFieldValue('hostsFileEntries', hostsFileEntries)
+        }
         errors={errors?.hostsFileEntries}
         item={HostsFileEntryItem}
+        itemBuilder={() => ''}
       />
     </div>
   );
-
-  function handleChange(newValues: Partial<Values>) {
-    onChange({ ...values, ...newValues });
-  }
 }
 
 function HostsFileEntryItem({

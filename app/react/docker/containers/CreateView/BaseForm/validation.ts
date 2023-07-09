@@ -10,12 +10,18 @@ import { validationSchema as portsSchema } from './PortsMappingField.validation'
 export function validation(
   {
     isAdmin,
+    isDuplicating,
+    isDuplicatingPortainer,
   }: {
     isAdmin: boolean;
-  } = { isAdmin: false }
+    isDuplicating: boolean | undefined;
+    isDuplicatingPortainer: boolean | undefined;
+  } = { isAdmin: false, isDuplicating: false, isDuplicatingPortainer: false }
 ): SchemaOf<Values> {
   return object({
-    name: string().required('Name is required'),
+    name: string()
+      .default('')
+      .test('not-duplicate-portainer', () => !isDuplicatingPortainer),
     alwaysPull: boolean().default(true),
     accessControl: accessControlSchema(isAdmin),
     autoRemove: boolean().default(false),
@@ -23,6 +29,10 @@ export function validation(
     nodeName: string().default(''),
     ports: portsSchema(),
     publishAllPorts: boolean().default(false),
-    image: imageConfigValidation(),
+    image: imageConfigValidation().test(
+      'duplicate-must-have-registry',
+      'Duplicate is only possible when registry is selected',
+      (value) => !isDuplicating || typeof value.registryId !== 'undefined'
+    ),
   });
 }

@@ -11,12 +11,12 @@ import { Values } from './types';
 export function CommandsTab({
   apiVersion,
   values,
-  onChange,
+  setFieldValue,
   errors,
 }: {
   apiVersion: number;
   values: Values;
-  onChange: (values: Values) => void;
+  setFieldValue: (field: string, value: unknown) => void;
   errors?: FormikErrors<Values>;
 }) {
   return (
@@ -29,7 +29,7 @@ export function CommandsTab({
       >
         <OverridableInput
           value={values.cmd}
-          onChange={(cmd) => handleChange({ cmd })}
+          onChange={(cmd) => setFieldValue('cmd', cmd)}
           id="command-input"
           placeholder="e.g. '-logtostderr' '--housekeeping_interval=5s' or /usr/bin/nginx -t -c /mynginx.conf"
         />
@@ -44,7 +44,7 @@ export function CommandsTab({
       >
         <OverridableInput
           value={values.entrypoint}
-          onChange={(entrypoint) => handleChange({ entrypoint })}
+          onChange={(entrypoint) => setFieldValue('entrypoint', entrypoint)}
           id="entrypoint-input"
           placeholder="e.g. /bin/sh -c"
         />
@@ -59,7 +59,7 @@ export function CommandsTab({
         >
           <Input
             value={values.workingDir}
-            onChange={(e) => handleChange({ workingDir: e.target.value })}
+            onChange={(e) => setFieldValue('workingDir', e.target.value)}
             placeholder="e.g. /myapp"
           />
         </FormControl>
@@ -71,7 +71,7 @@ export function CommandsTab({
         >
           <Input
             value={values.user}
-            onChange={(e) => handleChange({ user: e.target.value })}
+            onChange={(e) => setFieldValue('user', e.target.value)}
             placeholder="e.g. nginx"
           />
         </FormControl>
@@ -79,23 +79,15 @@ export function CommandsTab({
 
       <ConsoleSettings
         value={values.console}
-        onChange={(console) => handleChange({ console })}
+        onChange={(console) => setFieldValue('console', console)}
       />
 
       <LoggerConfig
         apiVersion={apiVersion}
         value={values.logConfig}
-        onChange={(logConfig) =>
-          handleChange({
-            logConfig,
-          })
-        }
+        onChange={(logConfig) => setFieldValue('logConfig', logConfig)}
         errors={errors?.logConfig}
       />
     </div>
   );
-
-  function handleChange(newValues: Partial<Values>) {
-    onChange({ ...values, ...newValues });
-  }
 }

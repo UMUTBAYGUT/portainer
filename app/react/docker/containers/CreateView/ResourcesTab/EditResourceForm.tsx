@@ -3,6 +3,8 @@ import { useMutation } from 'react-query';
 
 import { notifySuccess } from '@/portainer/services/notifications';
 import { mutationOptions, withError } from '@/react-tools/react-query';
+import { useSystemLimits } from '@/react/docker/proxy/queries/useInfo';
+import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
 
 import { LoadingButton } from '@@/buttons';
 import { TextTip } from '@@/Tip/TextTip';
@@ -10,7 +12,6 @@ import { TextTip } from '@@/Tip/TextTip';
 import {
   ResourceFieldset,
   resourcesValidation,
-  useSystemLimits,
   Values,
 } from './ResourcesFieldset';
 
@@ -28,7 +29,8 @@ export function EditResourcesForm({
     mutationOptions(withError('Failed to update limits'))
   );
 
-  const systemLimits = useSystemLimits();
+  const environmentId = useEnvironmentId();
+  const systemLimits = useSystemLimits(environmentId);
 
   return (
     <Formik

@@ -3,7 +3,7 @@ import PortainerError from '@/portainer/error';
 import axios from '@/portainer/services/axios';
 import { genericHandler } from '@/docker/rest/response/handlers';
 
-import { ContainerId, DockerContainer } from './types';
+import { ContainerId } from './types';
 
 export async function startContainer(
   endpointId: EnvironmentId,
@@ -75,12 +75,12 @@ export async function renameContainer(
 
 export async function removeContainer(
   endpointId: EnvironmentId,
-  container: DockerContainer,
-  removeVolumes: boolean
+  containerId: string,
+  removeVolumes?: boolean
 ) {
   try {
     const { data } = await axios.delete<null | { message: string }>(
-      urlBuilder(endpointId, container.Id),
+      urlBuilder(endpointId, containerId),
       {
         params: { v: removeVolumes ? 1 : 0, force: true },
         transformResponse: genericHandler,

@@ -292,7 +292,7 @@ angular.module('portainer.docker').controller('ContainerController', [
     };
 
     function removeContainer(cleanAssociatedVolumes) {
-      ContainerService.remove($scope.container, cleanAssociatedVolumes)
+      ContainerService.remove($scope.container.Id, cleanAssociatedVolumes)
         .then(function success() {
           Notifications.success('Success', 'Container successfully removed');
           $state.go('docker.containers', {}, { reload: true });

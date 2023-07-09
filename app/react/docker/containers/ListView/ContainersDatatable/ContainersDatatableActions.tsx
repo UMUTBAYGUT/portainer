@@ -291,7 +291,7 @@ export function ContainersDatatableActions({
       const container = containers[i];
       try {
         setPortainerAgentTargetHeader(container.NodeName);
-        await removeContainer(endpointId, container, cleanVolumes);
+        await removeContainer(endpointId, container.Id, cleanVolumes);
         notifications.success(
           'Container successfully removed',
           container.Names[0]

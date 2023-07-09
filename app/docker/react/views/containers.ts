@@ -6,9 +6,14 @@ import { ListView } from '@/react/docker/containers/ListView';
 import { withCurrentUser } from '@/react-tools/withCurrentUser';
 import { withReactQuery } from '@/react-tools/withReactQuery';
 import { withUIRouter } from '@/react-tools/withUIRouter';
+import { CreateView } from '@/react/docker/containers/CreateView/CreateView';
 
 export const containersModule = angular
   .module('portainer.docker.react.views.containers', [])
+  .component(
+    'reactContainerCreateView',
+    r2a(withUIRouter(withReactQuery(withCurrentUser(CreateView))), [])
+  )
   .component(
     'containersView',
     r2a(withUIRouter(withReactQuery(withCurrentUser(ListView))), ['endpoint'])
