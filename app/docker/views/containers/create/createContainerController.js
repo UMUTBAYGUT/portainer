@@ -1,23 +1,24 @@
 import _ from 'lodash-es';
 
 import * as envVarsUtils from '@/react/components/form-components/EnvironmentVariablesFieldset/utils';
-import { PorImageRegistryModel } from 'Docker/models/porImageRegistry';
 
 import { confirmDestructive } from '@@/modals/confirm';
 import { FeatureId } from '@/react/portainer/feature-flags/enums';
 import { buildConfirmButton } from '@@/modals/utils';
 
+import { parseBaseFormRequest, parseBaseFormViewModel } from '@/react/docker/containers/CreateView/BaseForm';
 import { parseCommandsTabRequest, parseCommandsTabViewModel } from '@/react/docker/containers/CreateView/CommandsTab';
 import { parseVolumesTabRequest, parseVolumesTabViewModel } from '@/react/docker/containers/CreateView/VolumesTab';
 import { parseNetworkTabRequest, parseNetworkTabViewModel } from '@/react/docker/containers/CreateView/NetworkTab';
 import { parseLabelsTabRequest, parseLabelsTabViewModel } from '@/react/docker/containers/CreateView/LabelsTab';
 import { parseResourcesTabRequest, parseResourcesTabViewModel } from '@/react/docker/containers/CreateView/ResourcesTab';
 import { parseCapabilitiesTabRequest, parseCapabilitiesTabViewModel } from '@/react/docker/containers/CreateView/CapabilitiesTab';
-import { AccessControlFormData } from '@/portainer/components/accessControlForm/porAccessControlFormModel';
+import { parseRequest as parseResourcesRequest } from '@/react/docker/containers/CreateView/ResourcesTab/ResourcesFieldset';
 import { ContainerDetailsViewModel } from '@/docker/models/container';
 import { getContainers } from '@/react/docker/containers/queries/containers';
-import { parseRequest as parseResourcesRequest } from '@/react/docker/containers/CreateView/ResourcesTab/ResourcesFieldset';
 import './createcontainer.css';
+import { RegistryTypes } from '@/react/portainer/registries/types/registry';
+import { buildImageFullURI } from '@/docker/helpers/imageHelper';
 
 angular.module('portainer.docker').controller('CreateContainerController', [
   '$q',
@@ -43,6 +44,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
   'SettingsService',
   'HttpRequestHelper',
   'endpoint',
+  'EndpointService',
   function (
     $q,
     $scope,
@@ -66,29 +68,17 @@ angular.module('portainer.docker').controller('CreateContainerController', [
     SystemService,
     SettingsService,
     HttpRequestHelper,
-    endpoint
+    endpoint,
+    EndpointService
   ) {
     $scope.create = create;
     $scope.endpoint = endpoint;
     $scope.containerWebhookFeature = FeatureId.CONTAINER_WEBHOOK;
+    $scope.isAdmin = Authentication.isAdmin();
+    const userDetails = this.Authentication.getUserDetails();
+
     $scope.formValues = {
-      alwaysPull: true,
-      GPU: {
-        enabled: false,
-        useSpecific: false,
-        selectedGPUs: ['all'],
-        capabilities: ['compute', 'utility'],
-      },
-      ExtraHosts: [],
-      MacAddress: '',
-      IPv4: '',
-      IPv6: '',
-      DnsPrimary: '',
-      DnsSecondary: '',
-      AccessControlData: new AccessControlFormData(),
       Env: [],
-      NodeName: null,
-      RegistryModel: new PorImageRegistryModel(),
       commands: parseCommandsTabViewModel(),
       volumes: parseVolumesTabViewModel(),
       network: parseNetworkTabViewModel(),
@@ -96,6 +86,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       restartPolicy: 'no',
       resources: parseResourcesTabViewModel(),
       capabilities: [],
+      ...parseBaseFormViewModel($scope.isAdmin, userDetails.ID),
     };
 
     $scope.state = {
@@ -106,19 +97,32 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       settingUnlimitedResources: false,
     };
 
-    $scope.onAlwaysPullChange = onAlwaysPullChange;
-    $scope.handlePublishAllPortsChange = handlePublishAllPortsChange;
-    $scope.handleAutoRemoveChange = handleAutoRemoveChange;
-    $scope.handlePrivilegedChange = handlePrivilegedChange;
-    $scope.handleInitChange = handleInitChange;
     $scope.handleCommandsChange = handleCommandsChange;
+    $scope.onChange = onChange;
+
+    function onChange(values) {
+      $scope.formValues = {
+        ...$scope.formValues,
+        ...values,
+      };
+    }
 
     function handleCommandsChange(commands) {
       return $scope.$evalAsync(() => {
-        console.log('handleCommandsChange', commands);
         $scope.formValues.commands = commands;
       });
     }
+
+    $scope.isDuplicateValid = function () {
+      if (!$scope.fromContainer) {
+        return true;
+      }
+
+      const duplicatingPortainer = $scope.fromContainer.IsPortainer && $scope.fromContainer.Name === '/' + $scope.config.name;
+      const duplicatingWithRegistry = !!$scope.formValues.image.registryId;
+
+      return !duplicatingPortainer && duplicatingWithRegistry;
+    };
 
     $scope.onVolumesChange = function (volumes) {
       return $scope.$evalAsync(() => {
@@ -155,36 +159,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
         $scope.formValues.capabilities = capabilities;
       });
     };
-
-    function onAlwaysPullChange(checked) {
-      return $scope.$evalAsync(() => {
-        $scope.formValues.alwaysPull = checked;
-      });
-    }
-
-    function handlePublishAllPortsChange(checked) {
-      return $scope.$evalAsync(() => {
-        $scope.config.HostConfig.PublishAllPorts = checked;
-      });
-    }
-
-    function handleAutoRemoveChange(checked) {
-      return $scope.$evalAsync(() => {
-        $scope.config.HostConfig.AutoRemove = checked;
-      });
-    }
-
-    function handlePrivilegedChange(checked) {
-      return $scope.$evalAsync(() => {
-        $scope.config.HostConfig.Privileged = checked;
-      });
-    }
-
-    function handleInitChange(checked) {
-      return $scope.$evalAsync(() => {
-        $scope.config.HostConfig.Init = checked;
-      });
-    }
 
     $scope.handleEnvVarChange = handleEnvVarChange;
     function handleEnvVarChange(value) {
@@ -248,63 +222,17 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       Labels: {},
     };
 
-    $scope.addPortBinding = function () {
-      $scope.config.HostConfig.PortBindings.push({ hostPort: '', containerPort: '', protocol: 'tcp' });
-    };
+    async function prepareImageConfig() {
+      const registryModel = await getRegistryModel();
 
-    $scope.removePortBinding = function (index) {
-      $scope.config.HostConfig.PortBindings.splice(index, 1);
-    };
-
-    $scope.addExtraHost = function () {
-      $scope.formValues.ExtraHosts.push({ value: '' });
-    };
-
-    $scope.removeExtraHost = function (index) {
-      $scope.formValues.ExtraHosts.splice(index, 1);
-    };
-
-    $scope.addDevice = function () {
-      $scope.config.HostConfig.Devices.push({ pathOnHost: '', pathInContainer: '' });
-    };
-
-    $scope.removeDevice = function (index) {
-      $scope.config.HostConfig.Devices.splice(index, 1);
-    };
-
-    $scope.onGpuChange = function (values) {
-      return $async(async () => {
-        $scope.formValues.GPU = values;
-      });
-    };
-
-    $scope.addSysctl = function () {
-      $scope.formValues.Sysctls.push({ name: '', value: '' });
-    };
-
-    $scope.removeSysctl = function (index) {
-      $scope.formValues.Sysctls.splice(index, 1);
-    };
-
-    $scope.fromContainerMultipleNetworks = false;
-
-    function prepareImageConfig(config) {
-      const imageConfig = ImageHelper.createImageConfigForContainer($scope.formValues.RegistryModel);
-      config.Image = imageConfig.fromImage;
-    }
-
-    function preparePortBindings(config) {
-      const bindings = ContainerHelper.preparePortBindings(config.HostConfig.PortBindings);
-      config.ExposedPorts = {};
-      _.forEach(bindings, (_, key) => (config.ExposedPorts[key] = {}));
-      config.HostConfig.PortBindings = bindings;
+      return buildImageFullURI(registryModel);
     }
 
     function prepareEnvironmentVariables(config) {
       config.Env = envVarsUtils.convertToArrayOfStrings($scope.formValues.Env);
     }
 
-    function prepareConfiguration() {
+    async function prepareConfiguration() {
       var config = angular.copy($scope.config);
       config = parseCommandsTabRequest(config, $scope.formValues.commands);
       config = parseVolumesTabRequest(config, $scope.formValues.volumes);
@@ -313,52 +241,44 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       config.HostConfig.RestartPolicy.Name = $scope.formValues.restartPolicy;
       config = parseResourcesTabRequest(config, $scope.formValues.resources);
       config = parseCapabilitiesTabRequest(config, $scope.formValues.capabilities);
+      config = parseBaseFormRequest(config, $scope.formValues);
 
-      prepareImageConfig(config);
-      preparePortBindings(config);
+      config.name = $scope.formValues.name;
       prepareEnvironmentVariables(config);
 
-      return config;
-    }
+      config.Image = await prepareImageConfig(config);
 
-    function loadFromContainerPortBindings() {
-      const bindings = ContainerHelper.sortAndCombinePorts($scope.config.HostConfig.PortBindings);
-      $scope.config.HostConfig.PortBindings = bindings;
+      return config;
     }
 
     function loadFromContainerEnvironmentVariables() {
       $scope.formValues.Env = envVarsUtils.parseArrayOfStrings($scope.config.Env);
     }
 
-    function loadFromContainerImageConfig() {
-      RegistryService.retrievePorRegistryModelFromRepository($scope.config.Image, endpoint.Id)
-        .then((model) => {
-          $scope.formValues.RegistryModel = model;
-        })
-        .catch(function error(err) {
-          Notifications.error('Failure', err, 'Unable to retrieve registry');
-        });
-    }
-
     function loadFromContainerSpec() {
       // Get container
       Container.get({ id: $transition$.params().from })
-        .$promise.then(function success(d) {
+        .$promise.then(async function success(d) {
           var fromContainer = new ContainerDetailsViewModel(d);
-          if (fromContainer.ResourceControl) {
-            if (fromContainer.ResourceControl.Public) {
-              $scope.formValues.AccessControlData.AccessControlEnabled = false;
-            }
-
-            // When the container is create by duplicate/edit, the access permission
-            // shouldn't be copied
-            fromContainer.ResourceControl.UserAccesses = [];
-            fromContainer.ResourceControl.TeamAccesses = [];
-          }
 
           $scope.fromContainer = fromContainer;
           $scope.state.mode = 'duplicate';
           $scope.config = ContainerHelper.configFromContainer(angular.copy(d));
+
+          const imageModel = await RegistryService.retrievePorRegistryModelFromRepository($scope.config.Image, endpoint.Id);
+
+          $scope.formValues = parseBaseFormViewModel(
+            $scope.isAdmin,
+            userDetails.ID,
+            d,
+            {
+              image: imageModel.Image,
+              useRegistry: imageModel.UseRegistry,
+              registryId: imageModel.Registry.Id,
+            },
+            false,
+            $scope.formValues.NodeName
+          );
 
           $scope.formValues.commands = parseCommandsTabViewModel(d);
           $scope.formValues.volumes = parseVolumesTabViewModel(d);
@@ -371,11 +291,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
           $scope.formValues.resources = parseResourcesTabViewModel(d);
           $scope.formValues.capabilities = parseCapabilitiesTabViewModel(d);
 
-          loadFromContainerPortBindings(d);
-
           loadFromContainerEnvironmentVariables(d);
-
-          loadFromContainerImageConfig(d);
         })
         .catch(function error(err) {
           Notifications.error('Failure', err, 'Unable to retrieve container');
@@ -387,7 +303,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       $scope.formValues.NodeName = nodeName;
       HttpRequestHelper.setPortainerAgentTargetHeader(nodeName);
 
-      $scope.isAdmin = Authentication.isAdmin();
       $scope.showDeviceMapping = await shouldShowDevices();
       $scope.showSysctls = await shouldShowSysctls();
       $scope.areContainerCapabilitiesEnabled = await checkIfContainerCapabilitiesEnabled();
@@ -445,30 +360,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       $scope.allowPrivilegedMode = endpoint.SecuritySettings.allowPrivilegedModeForRegularUsers;
     }
 
-    function validateForm(accessControlData, isAdmin) {
-      $scope.state.formValidationError = '';
-      var error = '';
-      error = FormValidator.validateAccessControl(accessControlData, isAdmin);
-
-      if (error) {
-        $scope.state.formValidationError = error;
-        return false;
-      }
-      return true;
-    }
-
-    $scope.handleResourceChange = handleResourceChange;
-    function handleResourceChange() {
-      $scope.state.settingUnlimitedResources = false;
-      if (
-        ($scope.config.HostConfig.Memory > 0 && $scope.formValues.MemoryLimit === 0) ||
-        ($scope.config.HostConfig.MemoryReservation > 0 && $scope.formValues.MemoryReservation === 0) ||
-        ($scope.config.HostConfig.NanoCpus > 0 && $scope.formValues.CpuLimit === 0)
-      ) {
-        $scope.state.settingUnlimitedResources = true;
-      }
-    }
-
     $scope.updateLimits = updateLimits;
     async function updateLimits(resourceValues) {
       const settingUnlimitedResources =
@@ -506,7 +397,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       }
 
       function findCurrentContainer() {
-        return Container.query({ all: 1, filters: { name: ['^/' + $scope.config.name + '$'] } })
+        return Container.query({ all: 1, filters: { name: ['^/' + $scope.formValues.name + '$'] } })
           .$promise.then(function onQuerySuccess(containers) {
             if (!containers.length) {
               return;
@@ -524,9 +415,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
         if (!confirmed) {
           return $q.when();
         }
-        if (!validateAccessControl()) {
-          return $q.when();
-        }
+
         $scope.state.actionInProgress = true;
         return pullImageIfNeeded()
           .then(stopAndRenameContainer)
@@ -534,8 +423,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
           .then(applyResourceControl)
           .then(connectToExtraNetworks)
           .then(removeOldContainer)
-          .then(onSuccess)
-          .catch(onCreationProcessFail);
+          .then(onSuccess, onCreationProcessFail);
       }
 
       function onCreationProcessFail(error) {
@@ -606,13 +494,18 @@ angular.module('portainer.docker').controller('CreateContainerController', [
         return ContainerService.renameContainer(oldContainer.Id, oldContainer.Names[0] + '-old');
       }
 
-      function pullImageIfNeeded() {
-        return $q.when($scope.formValues.alwaysPull && ImageService.pullImage($scope.formValues.RegistryModel, true));
+      async function pullImageIfNeeded() {
+        if (!$scope.formValues.alwaysPull) {
+          return;
+        }
+        const registryModel = await getRegistryModel();
+        return ImageService.pullImage(registryModel, true);
       }
 
       function createNewContainer() {
         return $async(async () => {
-          const config = prepareConfiguration();
+          const config = await prepareConfiguration();
+
           return await ContainerService.createAndStartContainer(config);
         });
       }
@@ -620,7 +513,8 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       async function sendAnalytics() {
         const publicSettings = await SettingsService.publicSettings();
         const analyticsAllowed = publicSettings.EnableTelemetry;
-        const image = `${$scope.formValues.RegistryModel.Registry.URL}/${$scope.formValues.RegistryModel.Image}`;
+        const registryModel = await getRegistryModel();
+        const image = `${registryModel.Registry.URL}/${registryModel.Image}`;
         if (analyticsAllowed && $scope.formValues.GPU.enabled) {
           $analytics.eventTrack('gpuContainerCreated', {
             category: 'docker',
@@ -633,7 +527,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
         const userId = Authentication.getUserDetails().ID;
         const resourceControl = newContainer.Portainer.ResourceControl;
         const containerId = newContainer.Id;
-        const accessControlData = $scope.formValues.AccessControlData;
+        const accessControlData = $scope.formValues.accessControl;
 
         return ResourceControlService.applyResourceControl(userId, accessControlData, resourceControl).then(function onApplyResourceControlSuccess() {
           return containerId;
@@ -641,11 +535,11 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       }
 
       function connectToExtraNetworks(newContainerId) {
-        if (!$scope.formValues.network.extraNetworks) {
+        if (!$scope.extraNetworks) {
           return $q.when();
         }
 
-        var connectionPromises = _.forOwn($scope.formValues.network.extraNetworks, function (network, networkName) {
+        var connectionPromises = _.forOwn($scope.extraNetworks, function (network, networkName) {
           if (_.has(network, 'Aliases')) {
             var aliases = _.filter(network.Aliases, (o) => {
               return !_.startsWith($scope.fromContainer.Id, o);
@@ -683,11 +577,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
         Notifications.error('Failure', err, 'Unable to create container');
       }
 
-      function validateAccessControl() {
-        var accessControlData = $scope.formValues.AccessControlData;
-        return validateForm(accessControlData, $scope.isAdmin);
-      }
-
       async function onSuccess() {
         await sendAnalytics();
         Notifications.success('Success', 'Container successfully created');
@@ -705,6 +594,20 @@ angular.module('portainer.docker').controller('CreateContainerController', [
 
     async function checkIfContainerCapabilitiesEnabled() {
       return endpoint.SecuritySettings.allowContainerCapabilitiesForRegularUsers || Authentication.isAdmin();
+    }
+
+    async function getRegistryModel() {
+      const image = $scope.formValues.image;
+      const registries = await EndpointService.registries(endpoint.Id);
+      return {
+        Image: image.image,
+        UseRegistry: image.useRegistry,
+        Registry: registries.find((registry) => registry.Id === image.registryId) || {
+          Id: 0,
+          Name: 'Docker Hub',
+          Type: RegistryTypes.ANONYMOUS,
+        },
+      };
     }
 
     initView();

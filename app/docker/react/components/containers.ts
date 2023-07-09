@@ -34,6 +34,11 @@ import {
   CapabilitiesTab,
   capabilitiesTabValidation,
 } from '@/react/docker/containers/CreateView/CapabilitiesTab';
+import {
+  BaseForm,
+  baseFormValidation,
+} from '@/react/docker/containers/CreateView/BaseForm';
+import { withCurrentUser } from '@/react-tools/withCurrentUser';
 
 const ngModule = angular.module(
   'portainer.docker.react.components.containers',
@@ -104,4 +109,12 @@ withFormValidation(
   'dockerCreateContainerCapabilitiesTab',
   [],
   capabilitiesTabValidation
+);
+
+withFormValidation(
+  ngModule,
+  withUIRouter(withReactQuery(withCurrentUser(BaseForm))),
+  'dockerCreateContainerBaseForm',
+  ['isValid', 'isLoading'],
+  baseFormValidation
 );
