@@ -26,10 +26,12 @@ export function useContainers<T = DockerContainer[]>(
   {
     autoRefreshRate,
     select,
+    enabled,
     ...params
   }: UseContainers & {
     autoRefreshRate?: number;
     select?: (data: DockerContainer[]) => T;
+    enabled?: boolean;
   } = {}
 ) {
   return useQuery(
@@ -41,6 +43,7 @@ export function useContainers<T = DockerContainer[]>(
         return autoRefreshRate ?? false;
       },
       select,
+      enabled,
     }
   );
 }

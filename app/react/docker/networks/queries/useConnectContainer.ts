@@ -1,4 +1,5 @@
 import { EndpointSettings } from 'docker-types/generated/1.41';
+import { AxiosRequestHeaders } from 'axios';
 
 import axios, { parseAxiosError } from '@/portainer/services/axios';
 import { EnvironmentId } from '@/react/portainer/environments/types';
@@ -15,11 +16,13 @@ export async function connectContainer({
   containerId,
   networkId,
   aliases,
+  nodeName,
 }: {
   environmentId: EnvironmentId;
   networkId: string;
   containerId: string;
   aliases?: EndpointSettings['Aliases'];
+  nodeName?: string;
 }) {
   const payload: ConnectContainerPayload = {
     Container: containerId,
@@ -28,6 +31,12 @@ export async function connectContainer({
     payload.EndpointConfig = {
       Aliases: aliases,
     };
+  }
+
+  const headers: AxiosRequestHeaders = {};
+
+  if (nodeName) {
+    headers['X-PortainerAgent-Target'] = nodeName;
   }
 
   try {

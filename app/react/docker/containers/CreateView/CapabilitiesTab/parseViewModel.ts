@@ -3,7 +3,7 @@ import { ContainerJSON } from '@/react/docker/containers/queries/container';
 import { capabilities } from './types';
 import { Values } from './CapabilitiesTab';
 
-export function parseViewModel(config?: ContainerJSON): Values {
+export function parseViewModel(config: ContainerJSON): Values {
   const { CapAdd, CapDrop } = getDefaults(config);
 
   const missingCaps = capabilities
@@ -28,4 +28,8 @@ export function parseViewModel(config?: ContainerJSON): Values {
       CapDrop: config.HostConfig.CapDrop || [],
     };
   }
+}
+
+export function getDefaultViewModel(): Values {
+  return capabilities.filter((cap) => cap.default).map((cap) => cap.key);
 }

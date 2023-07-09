@@ -1,3 +1,5 @@
+import { AxiosRequestHeaders } from 'axios';
+
 import { EnvironmentId } from '@/react/portainer/environments/types';
 import PortainerError from '@/portainer/error';
 import axios from '@/portainer/services/axios';
@@ -6,21 +8,35 @@ import { genericHandler } from '@/docker/rest/response/handlers';
 import { ContainerId } from './types';
 
 export async function startContainer(
-  endpointId: EnvironmentId,
-  id: ContainerId
+  environmentId: EnvironmentId,
+  id: ContainerId,
+  nodeName = ''
 ) {
+  const headers: AxiosRequestHeaders = {};
+
+  if (nodeName) {
+    headers['X-PortainerAgent-Target'] = nodeName;
+  }
+
   await axios.post<void>(
-    urlBuilder(endpointId, id, 'start'),
+    urlBuilder(environmentId, id, 'start'),
     {},
-    { transformResponse: genericHandler }
+    { transformResponse: genericHandler, headers }
   );
 }
 
 export async function stopContainer(
   endpointId: EnvironmentId,
-  id: ContainerId
+  id: ContainerId,
+  nodeName = ''
 ) {
-  await axios.post<void>(urlBuilder(endpointId, id, 'stop'), {});
+  const headers: AxiosRequestHeaders = {};
+
+  if (nodeName) {
+    headers['X-PortainerAgent-Target'] = nodeName;
+  }
+
+  await axios.post<void>(urlBuilder(endpointId, id, 'stop'), {}, { headers });
 }
 
 export async function recreateContainer(
@@ -64,26 +80,43 @@ export async function resumeContainer(
 export async function renameContainer(
   endpointId: EnvironmentId,
   id: ContainerId,
-  name: string
+  name: string,
+  nodeName = ''
 ) {
+  const headers: AxiosRequestHeaders = {};
+
+  if (nodeName) {
+    headers['X-PortainerAgent-Target'] = nodeName;
+  }
+
   await axios.post<void>(
     urlBuilder(endpointId, id, 'rename'),
     {},
-    { params: { name }, transformResponse: genericHandler }
+    { params: { name }, transformResponse: genericHandler, headers }
   );
 }
 
 export async function removeContainer(
   endpointId: EnvironmentId,
   containerId: string,
-  removeVolumes?: boolean
+  {
+    nodeName,
+    removeVolumes,
+  }: { removeVolumes?: boolean; nodeName?: string } = {}
 ) {
   try {
+    const headers: AxiosRequestHeaders = {};
+
+    if (nodeName) {
+      headers['X-PortainerAgent-Target'] = nodeName;
+    }
+
     const { data } = await axios.delete<null | { message: string }>(
       urlBuilder(endpointId, containerId),
       {
         params: { v: removeVolumes ? 1 : 0, force: true },
         transformResponse: genericHandler,
+        headers,
       }
     );
 

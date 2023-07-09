@@ -8,45 +8,17 @@ import { ConsoleConfig, ConsoleSetting } from './ConsoleSettings';
 import { LogConfig } from './LoggerConfig';
 import { Values } from './types';
 
-export function parseViewModel(config?: ContainerJSON): Values {
-  if (!config || !config.Config || !config.HostConfig) {
-    return {
-      cmd: null,
-      entrypoint: null,
-      user: '',
-      workingDir: '',
-      console: 'none',
-      logConfig: getLogConfig(),
-    };
-  }
-
+export function parseViewModel(config: ContainerJSON): Values {
   return {
-    cmd: config.Config.Cmd ? commandArrayToString(config.Config.Cmd) : null,
-    entrypoint: config.Config.Entrypoint
-      ? commandArrayToString(config.Config.Entrypoint)
+    cmd: config.Config?.Cmd ? commandArrayToString(config.Config?.Cmd) : null,
+    entrypoint: config.Config?.Entrypoint
+      ? commandArrayToString(config.Config?.Entrypoint)
       : null,
-    user: config.Config.User || '',
-    workingDir: config.Config.WorkingDir || '',
-    console: config ? getConsoleSetting(config.Config) : 'none',
-    logConfig: getLogConfig(config.HostConfig.LogConfig),
+    user: config.Config?.User || '',
+    workingDir: config.Config?.WorkingDir || '',
+    console: config ? getConsoleSetting(config.Config || {}) : 'none',
+    logConfig: getLogConfig(config.HostConfig?.LogConfig),
   };
-
-  function getLogConfig(value?: HostConfig['LogConfig']): LogConfig {
-    if (!value || !value.Type) {
-      return {
-        type: 'none',
-        options: [],
-      };
-    }
-
-    return {
-      type: value.Type,
-      options: Object.entries(value.Config || {}).map(([option, value]) => ({
-        option,
-        value,
-      })),
-    };
-  }
 
   function getConsoleSetting(value: ConsoleConfig): ConsoleSetting {
     if (value.OpenStdin && value.Tty) {
@@ -63,4 +35,32 @@ export function parseViewModel(config?: ContainerJSON): Values {
 
     return 'none';
   }
+}
+
+export function getDefaultViewModel(): Values {
+  return {
+    cmd: null,
+    entrypoint: null,
+    user: '',
+    workingDir: '',
+    console: 'none',
+    logConfig: getLogConfig(),
+  };
+}
+
+function getLogConfig(value?: HostConfig['LogConfig']): LogConfig {
+  if (!value || !value.Type) {
+    return {
+      type: 'none',
+      options: [],
+    };
+  }
+
+  return {
+    type: value.Type,
+    options: Object.entries(value.Config || {}).map(([option, value]) => ({
+      option,
+      value,
+    })),
+  };
 }

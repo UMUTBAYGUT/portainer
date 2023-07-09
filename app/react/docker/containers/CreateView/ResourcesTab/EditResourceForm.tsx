@@ -1,4 +1,4 @@
-import { Form, Formik } from 'formik';
+import { Formik } from 'formik';
 import { useMutation } from 'react-query';
 
 import { notifySuccess } from '@/portainer/services/notifications';
@@ -39,7 +39,7 @@ export function EditResourcesForm({
       validationSchema={() => resourcesValidation(systemLimits)}
     >
       {({ values, errors, setValues, dirty }) => (
-        <Form className="edit-resources p-5">
+        <div className="edit-resources p-5">
           <ResourceFieldset
             values={values}
             onChange={setValues}
@@ -66,7 +66,7 @@ export function EditResourcesForm({
               </div>
             )}
           </div>
-        </Form>
+        </div>
       )}
     </Formik>
   );

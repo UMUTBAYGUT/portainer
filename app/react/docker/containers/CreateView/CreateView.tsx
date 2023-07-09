@@ -1,45 +1,15 @@
+import { Formik } from 'formik';
+import { useRouter } from '@uirouter/react';
 import { useState } from 'react';
-import { Settings } from 'lucide-react';
-import { Form, Formik, useFormikContext } from 'formik';
-import { useCurrentStateAndParams, useRouter } from '@uirouter/react';
 
-import {
-  BaseForm,
-  parseBaseFormRequest,
-  parseBaseFormViewModel,
-} from '@/react/docker/containers/CreateView/BaseForm';
-import {
-  CapabilitiesTab,
-  parseCapabilitiesTabRequest,
-  parseCapabilitiesTabViewModel,
-} from '@/react/docker/containers/CreateView/CapabilitiesTab';
-import {
-  CommandsTab,
-  parseCommandsTabRequest,
-  parseCommandsTabViewModel,
-} from '@/react/docker/containers/CreateView/CommandsTab';
-import {
-  LabelsTab,
-  parseLabelsTabRequest,
-  parseLabelsTabViewModel,
-} from '@/react/docker/containers/CreateView/LabelsTab';
-import {
-  NetworkTab,
-  parseNetworkTabRequest,
-  parseNetworkTabViewModel,
-} from '@/react/docker/containers/CreateView/NetworkTab';
-import {
-  ResourcesTab,
-  parseResourcesTabRequest,
-  parseResourcesTabViewModel,
-} from '@/react/docker/containers/CreateView/ResourcesTab';
-import { RestartPolicyTab } from '@/react/docker/containers/CreateView/RestartPolicyTab';
-import {
-  VolumesTab,
-  parseVolumesTabRequest,
-  parseVolumesTabViewModel,
-} from '@/react/docker/containers/CreateView/VolumesTab';
-import { useCurrentUser, useIsEnvironmentAdmin } from '@/react/hooks/useUser';
+import { parseBaseFormRequest } from '@/react/docker/containers/CreateView/BaseForm';
+import { parseCapabilitiesTabRequest } from '@/react/docker/containers/CreateView/CapabilitiesTab';
+import { parseCommandsTabRequest } from '@/react/docker/containers/CreateView/CommandsTab';
+import { parseLabelsTabRequest } from '@/react/docker/containers/CreateView/LabelsTab';
+import { parseNetworkTabRequest } from '@/react/docker/containers/CreateView/NetworkTab';
+import { parseResourcesTabRequest } from '@/react/docker/containers/CreateView/ResourcesTab';
+import { parseVolumesTabRequest } from '@/react/docker/containers/CreateView/VolumesTab';
+import { useCurrentUser } from '@/react/hooks/useUser';
 import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
 import { useCurrentEnvironment } from '@/react/hooks/useCurrentEnvironment';
 import { useEnvironmentRegistries } from '@/react/portainer/environments/queries/useEnvironmentRegistries';
@@ -47,24 +17,14 @@ import { Registry } from '@/react/portainer/registries/types/registry';
 import { notifySuccess } from '@/portainer/services/notifications';
 import { useAnalytics } from '@/react/hooks/useAnalytics';
 import { useDebouncedValue } from '@/react/hooks/useDebouncedValue';
-import { getImageConfig } from '@/react/portainer/registries/utils/getImageConfig';
-import { useWebhooks } from '@/react/portainer/webhooks/useWebhooks';
 
-import { EnvironmentVariablesFieldset } from '@@/form-components/EnvironmentVariablesFieldset';
-import { NavTabs } from '@@/NavTabs';
 import { PageHeader } from '@@/PageHeader';
-import { Widget } from '@@/Widget';
-import {
-  convertToArrayOfStrings,
-  parseArrayOfStrings,
-} from '@@/form-components/EnvironmentVariablesFieldset/utils';
+import { convertToArrayOfStrings } from '@@/form-components/EnvironmentVariablesFieldset/utils';
 import { ImageConfigValues } from '@@/ImageConfigFieldset';
 import { confirmDestructive } from '@@/modals/confirm';
 import { buildConfirmButton } from '@@/modals/utils';
 
-import { useApiVersion } from '../../proxy/queries/useVersion';
 import { buildImageFullURI } from '../../images/utils';
-import { useContainer } from '../queries/container';
 import { useContainers } from '../queries/containers';
 import { useSystemLimits } from '../../proxy/queries/useInfo';
 
@@ -72,12 +32,10 @@ import { CreateContainerRequest } from './types';
 import { parseRestartPolicyTabRequest } from './RestartPolicyTab/RestartPolicyTab';
 import { useCreateOrReplaceMutation } from './useCreateMutation';
 import { validation } from './validation';
-import { useNetworksForSelector } from './NetworkTab/NetworkSelector';
-import { Values } from './useInitialValues';
+import { useInitialValues, Values } from './useInitialValues';
+import { InnerForm } from './InnerForm';
 
 export function CreateView() {
-  // const initialValues = useInitialValues();
-
   return (
     <>
       <PageHeader
@@ -93,94 +51,41 @@ export function CreateView() {
   );
 }
 
-// function useInitialValues() {
-//   const {params: {from}} = useCurrentStateAndParams()
-// }
-
 function CreateForm() {
-  const {
-    params: { nodeName, from },
-  } = useCurrentStateAndParams();
-
   const environmentId = useEnvironmentId();
-
-  const fromContainerQuery = useContainer(environmentId, from);
-  const [name, setName] = useState('');
   const router = useRouter();
   const { trackEvent } = useAnalytics();
-  const networksQuery = useNetworksForSelector();
-  const runningContainersQuery = useContainers(environmentId, { all: false });
-  const { isAdmin, user } = useCurrentUser();
+  const { isAdmin } = useCurrentUser();
 
+  const initialValuesQuery = useInitialValues();
   const registriesQuery = useEnvironmentRegistries(environmentId);
+
   const mutation = useCreateOrReplaceMutation();
 
+  const [name, setName] = useState('');
   const debouncedName = useDebouncedValue(name, 1000);
   const oldContainerQuery = useContainers(environmentId, {
     filters: {
       name: [`^/${debouncedName}$`],
     },
   });
-  const webhookQuery = useWebhooks(
-    { endpointId: environmentId, resourceId: from },
-    { enabled: !!from }
-  );
 
   const { maxCpu, maxMemory } = useSystemLimits(environmentId);
 
   const envQuery = useCurrentEnvironment();
-  if (!envQuery.data) {
+  if (!envQuery.data || !initialValuesQuery) {
     return null;
   }
 
   const environment = envQuery.data;
+
   const oldContainer =
     oldContainerQuery.data && oldContainerQuery.data.length > 0
       ? oldContainerQuery.data[0]
       : undefined;
 
-  const fromContainer = fromContainerQuery.data;
+  const { isDuplicating = false, initialValues } = initialValuesQuery;
 
-  const loadingFromContainer = !!(from && !fromContainer);
-  if (
-    !registriesQuery.data ||
-    loadingFromContainer ||
-    !networksQuery.data ||
-    !runningContainersQuery.data ||
-    (from && !webhookQuery.data)
-  ) {
-    return null;
-  }
-
-  const imageConfig = fromContainer?.Config?.Image
-    ? getImageConfig(fromContainer?.Config?.Image, registriesQuery.data)
-    : {
-        image: '',
-        useRegistry: true,
-        registryId: 0,
-      };
-
-  const hasBridgeNetwork = networksQuery.data.some((n) => n.Name === 'bridge');
-  const initialValues: Values = {
-    commands: parseCommandsTabViewModel(fromContainer),
-    volumes: parseVolumesTabViewModel(fromContainer),
-    network: parseNetworkTabViewModel(
-      fromContainer,
-      hasBridgeNetwork,
-      runningContainersQuery.data
-    ),
-    labels: parseLabelsTabViewModel(fromContainer),
-    restartPolicy: fromContainer?.HostConfig?.RestartPolicy?.Name || 'no',
-    resources: parseResourcesTabViewModel(fromContainer),
-    capabilities: parseCapabilitiesTabViewModel(fromContainer),
-    nodeName,
-    image: imageConfig,
-    enableWebhook: webhookQuery.data ? webhookQuery.data.length > 0 : false,
-    env: parseArrayOfStrings(fromContainer?.Config?.Env),
-    ...parseBaseFormViewModel(isAdmin, user.Id, fromContainer),
-  };
-
-  const isDuplicating = !!fromContainer;
   return (
     <Formik
       initialValues={initialValues}
@@ -243,191 +148,6 @@ function CreateForm() {
       });
     }
   }
-}
-
-function InnerForm({
-  isLoading,
-  isDuplicate,
-  onChangeName,
-}: {
-  isDuplicate: boolean;
-  isLoading: boolean;
-  onChangeName: (value: string) => void;
-}) {
-  const { values, setFieldValue, errors, isValid } = useFormikContext<Values>();
-  const environmentId = useEnvironmentId();
-  const [tab, setTab] = useState('commands');
-  const apiVersion = useApiVersion(environmentId);
-  const isEnvironmentAdmin = useIsEnvironmentAdmin();
-  const envQuery = useCurrentEnvironment();
-
-  if (!envQuery.data) {
-    return null;
-  }
-
-  const environment = envQuery.data;
-
-  return (
-    <Form>
-      <div className="row">
-        <div className="col-sm-12">
-          <div className="form-horizontal">
-            <BaseForm
-              onChangeName={onChangeName}
-              isLoading={isLoading}
-              isValid={isValid}
-            />
-
-            <div className="mt-4">
-              <Widget>
-                <Widget.Title
-                  title="Advanced container settings"
-                  icon={Settings}
-                />
-                <Widget.Body>
-                  <NavTabs<string>
-                    onSelect={setTab}
-                    selectedId={tab}
-                    type="pills"
-                    justified
-                    options={[
-                      {
-                        id: 'commands',
-                        label: 'Commands & logging',
-                        children: (
-                          <CommandsTab
-                            apiVersion={apiVersion}
-                            values={values.commands}
-                            setFieldValue={(field, value) =>
-                              setFieldValue(`commands.${field}`, value)
-                            }
-                          />
-                        ),
-                      },
-                      {
-                        id: 'volumes',
-                        label: 'Volumes',
-                        children: (
-                          <VolumesTab
-                            values={values.volumes}
-                            onChange={(value) =>
-                              setFieldValue('volumes', value)
-                            }
-                            errors={errors.volumes}
-                            allowBindMounts={
-                              isEnvironmentAdmin ||
-                              environment.SecuritySettings
-                                .allowBindMountsForRegularUsers
-                            }
-                          />
-                        ),
-                      },
-                      {
-                        id: 'network',
-                        label: 'Network',
-                        children: (
-                          <NetworkTab
-                            values={values.network}
-                            setFieldValue={(field, value) =>
-                              setFieldValue(`network.${field}`, value)
-                            }
-                          />
-                        ),
-                      },
-                      {
-                        id: 'env',
-                        label: 'Env',
-                        children: (
-                          <EnvironmentVariablesFieldset
-                            values={values.env}
-                            onChange={(value) => setFieldValue('env', value)}
-                            errors={errors.env}
-                          />
-                        ),
-                      },
-                      {
-                        id: 'labels',
-                        label: 'Labels',
-                        children: (
-                          <LabelsTab
-                            values={values.labels}
-                            onChange={(value) => setFieldValue('labels', value)}
-                            errors={errors.labels}
-                          />
-                        ),
-                      },
-                      {
-                        id: 'restart',
-                        label: 'Restart policy',
-                        children: (
-                          <RestartPolicyTab
-                            values={values.restartPolicy}
-                            onChange={(value) =>
-                              setFieldValue('restartPolicy', value)
-                            }
-                          />
-                        ),
-                      },
-                      {
-                        id: 'runtime',
-                        label: 'Runtime & resources',
-                        children: (
-                          <ResourcesTab
-                            values={values.resources}
-                            errors={errors.resources}
-                            setFieldValue={(field, value) =>
-                              setFieldValue(`resources.${field}`, value)
-                            }
-                            allowPrivilegedMode={
-                              isEnvironmentAdmin ||
-                              environment.SecuritySettings
-                                .allowPrivilegedModeForRegularUsers
-                            }
-                            isDevicesFieldVisible={
-                              isEnvironmentAdmin ||
-                              environment.SecuritySettings
-                                .allowDeviceMappingForRegularUsers
-                            }
-                            isInitFieldVisible={apiVersion >= 1.37}
-                            isSysctlFieldVisible={
-                              isEnvironmentAdmin ||
-                              environment.SecuritySettings
-                                .allowSysctlSettingForRegularUsers
-                            }
-                            isImageInvalid={
-                              !values.image.image ||
-                              (typeof values.image.registryId === 'undefined' &&
-                                !!isDuplicate)
-                            }
-                            isDuplicate={!!isDuplicate}
-                            onUpdateLimits={async (limits) => {
-                              console.log(limits);
-                            }}
-                          />
-                        ),
-                      },
-                      {
-                        id: 'capabilities',
-                        label: 'Capabilities',
-                        children: (
-                          <CapabilitiesTab
-                            values={values.capabilities}
-                            onChange={(value) =>
-                              setFieldValue('capabilities', value)
-                            }
-                          />
-                        ),
-                      },
-                    ]}
-                  />
-                </Widget.Body>
-              </Widget>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Form>
-  );
 }
 
 function buildConfig(values: Values, registry?: Registry) {

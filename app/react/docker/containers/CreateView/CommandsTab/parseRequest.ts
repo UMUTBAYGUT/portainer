@@ -32,18 +32,6 @@ export function parseRequest(
 
   return config;
 
-  function getLogConfig(
-    value: LogConfig
-  ): CreateContainerRequest['HostConfig']['LogConfig'] {
-    return {
-      Type: value.type,
-      Config: Object.fromEntries(
-        value.options.map(({ option, value }) => [option, value])
-      ),
-      // docker types - requires union while it should allow also custom string for custom plugins
-    } as CreateContainerRequest['HostConfig']['LogConfig'];
-  }
-
   function getConsoleConfig(value: ConsoleSetting): ConsoleConfig {
     switch (value) {
       case 'both':
@@ -56,5 +44,17 @@ export function parseRequest(
       default:
         return { OpenStdin: false, Tty: false };
     }
+  }
+
+  function getLogConfig(
+    value: LogConfig
+  ): CreateContainerRequest['HostConfig']['LogConfig'] {
+    return {
+      Type: value.type,
+      Config: Object.fromEntries(
+        value.options.map(({ option, value }) => [option, value])
+      ),
+      // docker types - requires union while it should allow also custom string for custom plugins
+    } as CreateContainerRequest['HostConfig']['LogConfig'];
   }
 }
