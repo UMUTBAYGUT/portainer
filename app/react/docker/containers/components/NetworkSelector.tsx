@@ -1,32 +1,49 @@
+import { useMemo } from 'react';
+
 import { useNetworks } from '@/react/docker/networks/queries/useNetworks';
 import { DockerNetwork } from '@/react/docker/networks/types';
 import { useIsSwarm } from '@/react/docker/proxy/queries/useInfo';
 import { useApiVersion } from '@/react/docker/proxy/queries/useVersion';
 import { useEnvironmentId } from '@/react/hooks/useEnvironmentId';
 
-import { PortainerSelect } from '@@/form-components/PortainerSelect';
+import { Option, PortainerSelect } from '@@/form-components/PortainerSelect';
 
-export function NetworksSelector({
+export function NetworkSelector({
   onChange,
+  additionalOptions = [],
   value,
+  hiddenNetworks = [],
 }: {
   value: string;
+  additionalOptions?: Array<Option<string>>;
   onChange: (value: string) => void;
+  hiddenNetworks?: string[];
 }) {
   const networksQuery = useNetworksForSelector({
     select(networks) {
-      return [...networks, { Name: 'container' }]
-        .sort((a, b) => a.Name.localeCompare(b.Name))
-        .map((n) => ({ label: n.Name, value: n.Name }));
+      return networks.map((n) => ({ label: n.Name, value: n.Name }));
     },
   });
+
+  const networks = networksQuery.data;
+
+  const options = useMemo(
+    () =>
+      (networks || [])
+        .concat(additionalOptions)
+        .filter((n) => !hiddenNetworks.includes(n.value))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [additionalOptions, hiddenNetworks, networks]
+  );
 
   return (
     <PortainerSelect
       value={value}
       onChange={onChange}
-      options={networksQuery.data || []}
+      options={options}
       isLoading={networksQuery.isLoading}
+      bindToBody
+      placeholder="Select a network"
     />
   );
 }
