@@ -6,7 +6,8 @@ import { InputList, ItemProps } from '@@/form-components/InputList';
 import { InputGroup } from '@@/form-components/InputGroup';
 import { FormError } from '@@/form-components/FormError';
 
-import { NetworksSelector } from './NetworkSelector';
+import { NetworkSelector } from '../../components/NetworkSelector';
+
 import { Values } from './types';
 import { ContainerSelector } from './ContainerSelector';
 
@@ -22,8 +23,9 @@ export function NetworkTab({
   return (
     <div className="mt-3">
       <FormControl label="Network" errors={errors?.networkMode}>
-        <NetworksSelector
+        <NetworkSelector
           value={values.networkMode}
+          additionalOptions={[{ label: 'Container', value: 'Container' }]}
           onChange={(networkMode) => setFieldValue('networkMode', networkMode)}
         />
       </FormControl>

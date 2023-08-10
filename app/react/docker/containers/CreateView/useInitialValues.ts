@@ -47,8 +47,7 @@ import { EnvVarValues } from '@@/form-components/EnvironmentVariablesFieldset';
 
 import { useContainer } from '../queries/container';
 import { useContainers } from '../queries/containers';
-
-import { useNetworksForSelector } from './NetworkTab/NetworkSelector';
+import { useNetworksForSelector } from '../components/NetworkSelector';
 
 export interface Values extends BaseFormValues {
   commands: CommandsTabValues;
