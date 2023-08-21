@@ -14,7 +14,7 @@ import { withCurrentUser } from '@/react-tools/withCurrentUser';
 import { ContainerNetworksDatatable } from '@/react/docker/containers/ItemView/ContainerNetworksDatatable';
 import {
   VolumesTab,
-  volumesTabValidation,
+  volumesTabUtils,
 } from '@/react/docker/containers/CreateView/VolumesTab';
 
 const ngModule = angular
@@ -43,5 +43,5 @@ withFormValidation(
   withUIRouter(withReactQuery(VolumesTab)),
   'dockerCreateContainerVolumesTab',
   ['allowBindMounts'],
-  volumesTabValidation
+  volumesTabUtils.validation
 );

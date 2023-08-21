@@ -8,7 +8,7 @@ import { FeatureId } from '@/react/portainer/feature-flags/enums';
 import { buildConfirmButton } from '@@/modals/utils';
 
 import { commandsTabUtils } from '@/react/docker/containers/CreateView/CommandsTab';
-import { parseVolumesTabRequest, parseVolumesTabViewModel } from '@/react/docker/containers/CreateView/VolumesTab';
+import { volumesTabUtils } from '@/react/docker/containers/CreateView/VolumesTab';
 import { ContainerCapabilities, ContainerCapability } from '@/docker/models/containerCapabilities';
 import { AccessControlFormData } from '@/portainer/components/accessControlForm/porAccessControlFormModel';
 import { ContainerDetailsViewModel } from '@/docker/models/container';
@@ -93,7 +93,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       Sysctls: [],
       RegistryModel: new PorImageRegistryModel(),
       commands: commandsTabUtils.getDefaultViewModel(),
-      volumes: parseVolumesTabViewModel(),
+      volumes: volumesTabUtils.getDefaultViewModel(),
     };
 
     $scope.extraNetworks = {};
@@ -439,7 +439,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
     function prepareConfiguration() {
       var config = angular.copy($scope.config);
       config = commandsTabUtils.toRequest(config, $scope.formValues.commands);
-      config = parseVolumesTabRequest(config, $scope.formValues.volumes);
+      config = volumesTabUtils.toRequest(config, $scope.formValues.volumes);
 
       prepareNetworkConfig(config);
       prepareImageConfig(config);
@@ -649,7 +649,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
           $scope.config = ContainerHelper.configFromContainer(fromContainer.Model);
 
           $scope.formValues.commands = commandsTabUtils.toViewModel(d);
-          $scope.formValues.volumes = parseVolumesTabViewModel(d);
+          $scope.formValues.volumes = volumesTabUtils.toViewModel(d);
 
           loadFromContainerPortBindings(d);
 
