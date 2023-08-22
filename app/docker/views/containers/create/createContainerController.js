@@ -8,11 +8,13 @@ import { FeatureId } from '@/react/portainer/feature-flags/enums';
 import { buildConfirmButton } from '@@/modals/utils';
 
 import { commandsTabUtils } from '@/react/docker/containers/CreateView/CommandsTab';
+import { parseNetworkTabRequest, parseNetworkTabViewModel } from '@/react/docker/containers/CreateView/NetworkTab';
 import { ContainerCapabilities, ContainerCapability } from '@/docker/models/containerCapabilities';
 import { AccessControlFormData } from '@/portainer/components/accessControlForm/porAccessControlFormModel';
 import { ContainerDetailsViewModel } from '@/docker/models/container';
 
 import './createcontainer.css';
+import { getContainers } from '@/react/docker/containers/queries/containers';
 
 angular.module('portainer.docker').controller('CreateContainerController', [
   '$q',
@@ -76,7 +78,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
         capabilities: ['compute', 'utility'],
       },
       Volumes: [],
-      NetworkContainer: null,
       Labels: [],
       ExtraHosts: [],
       MacAddress: '',
@@ -95,9 +96,8 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       Sysctls: [],
       RegistryModel: new PorImageRegistryModel(),
       commands: commandsTabUtils.getDefaultViewModel(),
+      network: parseNetworkTabViewModel(),
     };
-
-    $scope.extraNetworks = {};
 
     $scope.state = {
       formValidationError: '',
@@ -120,6 +120,12 @@ angular.module('portainer.docker').controller('CreateContainerController', [
         $scope.formValues.commands = commands;
       });
     }
+
+    $scope.onNetworkChange = function (network) {
+      return $scope.$evalAsync(() => {
+        $scope.formValues.network = network;
+      });
+    };
 
     function onAlwaysPullChange(checked) {
       return $scope.$evalAsync(() => {
@@ -305,50 +311,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       config.Volumes = volumes;
     }
 
-    function prepareNetworkConfig(config) {
-      var mode = config.HostConfig.NetworkMode;
-      var container = $scope.formValues.NetworkContainer;
-      var containerName = container;
-      if (container && typeof container === 'object') {
-        containerName = container.Names[0];
-      }
-      var networkMode = mode;
-      if (containerName) {
-        networkMode += ':' + containerName;
-        config.Hostname = '';
-      }
-      config.HostConfig.NetworkMode = networkMode;
-      config.MacAddress = $scope.formValues.MacAddress;
-
-      config.NetworkingConfig.EndpointsConfig[networkMode] = {
-        IPAMConfig: {
-          IPv4Address: $scope.formValues.IPv4,
-          IPv6Address: $scope.formValues.IPv6,
-        },
-      };
-
-      if (networkMode && _.get($scope.config.NetworkingConfig.EndpointsConfig[networkMode], 'Aliases')) {
-        var aliases = $scope.config.NetworkingConfig.EndpointsConfig[networkMode].Aliases;
-        config.NetworkingConfig.EndpointsConfig[networkMode].Aliases = _.filter(aliases, (o) => {
-          return !_.startsWith($scope.fromContainer.Id, o);
-        });
-      }
-
-      var dnsServers = [];
-      if ($scope.formValues.DnsPrimary) {
-        dnsServers.push($scope.formValues.DnsPrimary);
-      }
-      if ($scope.formValues.DnsSecondary) {
-        dnsServers.push($scope.formValues.DnsSecondary);
-      }
-      config.HostConfig.Dns = dnsServers;
-
-      config.HostConfig.ExtraHosts = _.map(
-        _.filter($scope.formValues.ExtraHosts, (v) => v.value),
-        'value'
-      );
-    }
-
     function prepareLabels(config) {
       var labels = {};
       $scope.formValues.Labels.forEach(function (label) {
@@ -462,8 +424,8 @@ angular.module('portainer.docker').controller('CreateContainerController', [
     function prepareConfiguration() {
       var config = angular.copy($scope.config);
       config = commandsTabUtils.toRequest(config, $scope.formValues.commands);
+      config = parseNetworkTabRequest(config, $scope.formValues.network, $scope.fromContainer.Id);
 
-      prepareNetworkConfig(config);
       prepareImageConfig(config);
       preparePortBindings(config);
       prepareEnvironmentVariables(config);
@@ -494,70 +456,6 @@ angular.module('portainer.docker').controller('CreateContainerController', [
           };
           $scope.formValues.Volumes.push(volume);
         }
-      }
-    }
-
-    $scope.resetNetworkConfig = function () {
-      $scope.config.NetworkingConfig = {
-        EndpointsConfig: {},
-      };
-    };
-
-    function loadFromContainerNetworkConfig(d) {
-      $scope.config.NetworkingConfig = {
-        EndpointsConfig: {},
-      };
-      var networkMode = d.HostConfig.NetworkMode;
-      if (networkMode === 'default') {
-        $scope.config.HostConfig.NetworkMode = 'bridge';
-        if (!_.find($scope.availableNetworks, { Name: 'bridge' })) {
-          $scope.config.HostConfig.NetworkMode = 'nat';
-        }
-      }
-      if ($scope.config.HostConfig.NetworkMode.indexOf('container:') === 0) {
-        var netContainer = $scope.config.HostConfig.NetworkMode.split(/^container:/)[1];
-        $scope.config.HostConfig.NetworkMode = 'container';
-        for (var c in $scope.runningContainers) {
-          if ($scope.runningContainers[c].Id == netContainer) {
-            $scope.formValues.NetworkContainer = $scope.runningContainers[c];
-          }
-        }
-      }
-      $scope.fromContainerMultipleNetworks = Object.keys(d.NetworkSettings.Networks).length >= 2;
-      if (d.NetworkSettings.Networks[$scope.config.HostConfig.NetworkMode]) {
-        if (d.NetworkSettings.Networks[$scope.config.HostConfig.NetworkMode].IPAMConfig) {
-          if (d.NetworkSettings.Networks[$scope.config.HostConfig.NetworkMode].IPAMConfig.IPv4Address) {
-            $scope.formValues.IPv4 = d.NetworkSettings.Networks[$scope.config.HostConfig.NetworkMode].IPAMConfig.IPv4Address;
-          }
-          if (d.NetworkSettings.Networks[$scope.config.HostConfig.NetworkMode].IPAMConfig.IPv6Address) {
-            $scope.formValues.IPv6 = d.NetworkSettings.Networks[$scope.config.HostConfig.NetworkMode].IPAMConfig.IPv6Address;
-          }
-        }
-      }
-      $scope.config.NetworkingConfig.EndpointsConfig[$scope.config.HostConfig.NetworkMode] = d.NetworkSettings.Networks[$scope.config.HostConfig.NetworkMode];
-      if (Object.keys(d.NetworkSettings.Networks).length > 1) {
-        var firstNetwork = d.NetworkSettings.Networks[Object.keys(d.NetworkSettings.Networks)[0]];
-        $scope.config.NetworkingConfig.EndpointsConfig[$scope.config.HostConfig.NetworkMode] = firstNetwork;
-        $scope.extraNetworks = angular.copy(d.NetworkSettings.Networks);
-        delete $scope.extraNetworks[Object.keys(d.NetworkSettings.Networks)[0]];
-      }
-      $scope.formValues.MacAddress = d.Config.MacAddress;
-
-      if (d.HostConfig.Dns && d.HostConfig.Dns[0]) {
-        $scope.formValues.DnsPrimary = d.HostConfig.Dns[0];
-        if (d.HostConfig.Dns[1]) {
-          $scope.formValues.DnsSecondary = d.HostConfig.Dns[1];
-        }
-      }
-
-      // ExtraHosts
-      if ($scope.config.HostConfig.ExtraHosts) {
-        var extraHosts = $scope.config.HostConfig.ExtraHosts;
-        for (var i = 0; i < extraHosts.length; i++) {
-          var host = extraHosts[i];
-          $scope.formValues.ExtraHosts.push({ value: host });
-        }
-        $scope.config.HostConfig.ExtraHosts = [];
       }
     }
 
@@ -684,13 +582,13 @@ angular.module('portainer.docker').controller('CreateContainerController', [
 
           $scope.fromContainer = fromContainer;
           $scope.state.mode = 'duplicate';
-          $scope.config = ContainerHelper.configFromContainer(fromContainer.Model);
+          $scope.config = ContainerHelper.configFromContainer(angular.copy(d));
 
           $scope.formValues.commands = commandsTabUtils.toViewModel(d);
+          $scope.formValues.network = parseNetworkTabViewModel(d, $scope.availableNetworks, $scope.runningContainers);
 
           loadFromContainerPortBindings(d);
           loadFromContainerVolumes(d);
-          loadFromContainerNetworkConfig(d);
           loadFromContainerEnvironmentVariables(d);
           loadFromContainerLabels(d);
           loadFromContainerDevices(d);
@@ -745,11 +643,8 @@ angular.module('portainer.docker').controller('CreateContainerController', [
         .catch(function error(err) {
           Notifications.error('Failure', err, 'Unable to retrieve networks');
         });
-
-      Container.query(
-        {},
-        function (d) {
-          var containers = d;
+      getContainers(endpoint.Id)
+        .then((containers) => {
           $scope.runningContainers = containers;
           $scope.gpuUseAll = _.get($scope, 'endpoint.Snapshots[0].GpuUseAll', false);
           $scope.gpuUseList = _.get($scope, 'endpoint.Snapshots[0].GpuUseList', []);
@@ -760,11 +655,10 @@ angular.module('portainer.docker').controller('CreateContainerController', [
             $scope.fromContainer = {};
             $scope.formValues.capabilities = $scope.areContainerCapabilitiesEnabled ? new ContainerCapabilities() : [];
           }
-        },
-        function (e) {
+        })
+        .catch((e) => {
           Notifications.error('Failure', e, 'Unable to retrieve running containers');
-        }
-      );
+        });
 
       SystemService.info()
         .then(function success(data) {
@@ -982,11 +876,11 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       }
 
       function connectToExtraNetworks(newContainerId) {
-        if (!$scope.extraNetworks) {
+        if (!$scope.formValues.network.extraNetworks) {
           return $q.when();
         }
 
-        var connectionPromises = _.forOwn($scope.extraNetworks, function (network, networkName) {
+        var connectionPromises = _.forOwn($scope.formValues.network.extraNetworks, function (network, networkName) {
           if (_.has(network, 'Aliases')) {
             var aliases = _.filter(network.Aliases, (o) => {
               return !_.startsWith($scope.fromContainer.Id, o);
