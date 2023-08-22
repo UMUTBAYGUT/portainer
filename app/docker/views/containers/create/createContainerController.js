@@ -585,7 +585,11 @@ angular.module('portainer.docker').controller('CreateContainerController', [
           $scope.config = ContainerHelper.configFromContainer(angular.copy(d));
 
           $scope.formValues.commands = commandsTabUtils.toViewModel(d);
-          $scope.formValues.network = parseNetworkTabViewModel(d, $scope.availableNetworks, $scope.runningContainers);
+          $scope.formValues.network = parseNetworkTabViewModel(
+            d,
+            $scope.availableNetworks.find((n) => n.Name === 'bridge'),
+            $scope.runningContainers
+          );
 
           loadFromContainerPortBindings(d);
           loadFromContainerVolumes(d);

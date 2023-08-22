@@ -1,14 +1,12 @@
-import { DockerNetwork } from '@/react/docker/networks/types';
-
 import { ContainerJSON } from '../../queries/container';
-import { DockerContainerResponse } from '../../types/response';
+import { DockerContainer } from '../../types';
 
 import { Values } from './types';
 
 export function parseViewModel(
   config?: ContainerJSON,
-  availableNetworks: Array<DockerNetwork> = [],
-  runningContainers: Array<DockerContainerResponse> = []
+  hasBridgeNetwork = false,
+  runningContainers: Array<DockerContainer> = []
 ): Values {
   if (
     !config ||
@@ -37,7 +35,7 @@ export function parseViewModel(
 
   const [networkMode, container = ''] = getNetworkMode(
     config,
-    availableNetworks,
+    hasBridgeNetwork,
     runningContainers
   );
 
@@ -67,8 +65,8 @@ export function parseViewModel(
 
 function getNetworkMode(
   config: ContainerJSON,
-  availableNetworks: Array<DockerNetwork> = [],
-  runningContainers: Array<DockerContainerResponse> = []
+  hasBridgeNetwork: boolean,
+  runningContainers: Array<DockerContainer> = []
 ) {
   let networkMode = config.HostConfig?.NetworkMode || '';
   if (!networkMode) {
@@ -84,7 +82,7 @@ function getNetworkMode(
 
   if (networkMode === 'default') {
     networkMode = 'bridge';
-    if (!availableNetworks.find((n) => n.Name === 'bridge')) {
+    if (!hasBridgeNetwork) {
       networkMode = 'nat';
     }
 
