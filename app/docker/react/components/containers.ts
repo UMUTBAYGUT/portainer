@@ -10,9 +10,9 @@ import {
   commandsTabValidation,
 } from '@/react/docker/containers/CreateView/CommandsTab';
 import {
+  networkTabUtils,
   NetworkTab,
-  NetworkTabValues,
-  networkTabValidation,
+  type NetworkTabValues,
 } from '@/react/docker/containers/CreateView/NetworkTab';
 
 const ngModule = angular.module(
@@ -35,5 +35,5 @@ withFormValidation<ComponentProps<typeof NetworkTab>, NetworkTabValues>(
   withUIRouter(withReactQuery(NetworkTab)),
   'dockerCreateContainerNetworkTab',
   [],
-  networkTabValidation
+  networkTabUtils.validation
 );

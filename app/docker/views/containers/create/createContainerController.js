@@ -8,7 +8,7 @@ import { FeatureId } from '@/react/portainer/feature-flags/enums';
 import { buildConfirmButton } from '@@/modals/utils';
 
 import { commandsTabUtils } from '@/react/docker/containers/CreateView/CommandsTab';
-import { parseNetworkTabRequest, parseNetworkTabViewModel, getDefaultNetworkTabViewModel } from '@/react/docker/containers/CreateView/NetworkTab';
+import { networkTabUtils } from '@/react/docker/containers/CreateView/NetworkTab';
 import { ContainerCapabilities, ContainerCapability } from '@/docker/models/containerCapabilities';
 import { AccessControlFormData } from '@/portainer/components/accessControlForm/porAccessControlFormModel';
 import { ContainerDetailsViewModel } from '@/docker/models/container';
@@ -96,7 +96,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
       Sysctls: [],
       RegistryModel: new PorImageRegistryModel(),
       commands: commandsTabUtils.getDefaultViewModel(),
-      network: getDefaultNetworkTabViewModel(),
+      network: networkTabUtils.getDefaultViewModel(),
     };
 
     $scope.state = {
@@ -424,7 +424,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
     function prepareConfiguration() {
       var config = angular.copy($scope.config);
       config = commandsTabUtils.toRequest(config, $scope.formValues.commands);
-      config = parseNetworkTabRequest(config, $scope.formValues.network, $scope.fromContainer.Id);
+      config = networkTabUtils.toRequest(config, $scope.formValues.network, $scope.fromContainer.Id);
 
       prepareImageConfig(config);
       preparePortBindings(config);
@@ -585,7 +585,7 @@ angular.module('portainer.docker').controller('CreateContainerController', [
           $scope.config = ContainerHelper.configFromContainer(angular.copy(d));
 
           $scope.formValues.commands = commandsTabUtils.toViewModel(d);
-          $scope.formValues.network = parseNetworkTabViewModel(d, $scope.availableNetworks, $scope.runningContainers);
+          $scope.formValues.network = networkTabUtils.toViewModel(d, $scope.availableNetworks, $scope.runningContainers);
 
           loadFromContainerPortBindings(d);
           loadFromContainerVolumes(d);

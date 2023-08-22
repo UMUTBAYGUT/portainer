@@ -20,7 +20,7 @@ export function getDefaultViewModel(hasBridgeNetwork: boolean) {
   };
 }
 
-export function parseViewModel(
+export function toViewModel(
   config: ContainerJSON,
   networks: Array<DockerNetwork>,
   runningContainers: Array<DockerContainer> = []
