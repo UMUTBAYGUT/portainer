@@ -14,12 +14,10 @@ export function NetworkTab({
   values,
   onChange,
   errors,
-  apiVersion,
 }: {
   values: Values;
   onChange(values: Values): void;
   errors?: FormikErrors<Values>;
-  apiVersion: number;
 }) {
   return (
     <div className="mt-3">
@@ -27,7 +25,6 @@ export function NetworkTab({
         <NetworksSelector
           value={values.networkMode}
           onChange={(networkMode) => handleChange({ networkMode })}
-          apiVersion={apiVersion}
         />
       </FormControl>
 

@@ -34,6 +34,6 @@ withFormValidation<ComponentProps<typeof NetworkTab>, NetworkTabValues>(
   ngModule,
   withUIRouter(withReactQuery(NetworkTab)),
   'dockerCreateContainerNetworkTab',
-  ['apiVersion'],
+  [],
   networkTabValidation
 );
