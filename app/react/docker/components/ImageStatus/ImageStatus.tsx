@@ -9,6 +9,7 @@ import { useEnvironment } from '@/react/portainer/environments/queries';
 import { statusIcon } from '@/react/docker/components/ImageStatus/helpers';
 import { ResourceID, ResourceType } from '@/react/docker/images/types';
 import { EnvironmentId } from '@/react/portainer/environments/types';
+import { isBE } from '@/react/portainer/feature-flags/feature-flags.service';
 
 import { Icon } from '@@/Icon';
 
@@ -39,6 +40,10 @@ export function ImageStatus({
   );
 
   if (!enableImageNotificationQuery.data || isError) {
+    return null;
+  }
+
+  if (!isBE) {
     return null;
   }
 
