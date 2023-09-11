@@ -216,7 +216,7 @@
             <!-- !tab-command -->
 
             <div class="tab-pane" id="volumes">
-              <docker-create-container-volumes-tab values="formValues.volumes" on-change="(onVolumesChange)" allow-bind-mounts="allowBindMounts">
+              <docker-create-container-volumes-tab ng-if="state.containerIsLoaded" values="formValues.volumes" on-change="(onVolumesChange)" allow-bind-mounts="allowBindMounts">
               </docker-create-container-volumes-tab>
             </div>
 

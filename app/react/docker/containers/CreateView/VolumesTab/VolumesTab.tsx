@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import { InputList } from '@@/form-components/InputList';
 import { ArrayError } from '@@/form-components/InputList/InputList';
 
@@ -16,15 +18,15 @@ export function VolumesTab({
   allowBindMounts: boolean;
   errors?: ArrayError<Values>;
 }) {
-  const volumes = values;
+  const [controlledValues, setControlledValues] = useState(values);
 
   return (
     <InputContext.Provider value={allowBindMounts}>
       <InputList<Volume>
         errors={errors}
         label="Volume mapping"
-        onChange={(volumes) => onChange(volumes)}
-        value={volumes}
+        onChange={(volumes) => handleChange(volumes)}
+        value={controlledValues}
         addLabel="map additional volume"
         item={Item}
         itemBuilder={() => ({
@@ -36,4 +38,9 @@ export function VolumesTab({
       />
     </InputContext.Provider>
   );
+
+  function handleChange(newValues: Values) {
+    onChange(newValues);
+    setControlledValues(() => newValues);
+  }
 }
