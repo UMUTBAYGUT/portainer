@@ -8,7 +8,7 @@ export interface Props {
 }
 
 export function ButtonGroup({
-  size = 'small',
+  size,
   children,
   className,
 }: PropsWithChildren<Props>) {

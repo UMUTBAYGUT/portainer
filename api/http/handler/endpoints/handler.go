@@ -6,6 +6,7 @@ import (
 	portainer "github.com/portainer/portainer/api"
 	"github.com/portainer/portainer/api/dataservices"
 	"github.com/portainer/portainer/api/demo"
+	dockerclient "github.com/portainer/portainer/api/docker/client"
 	"github.com/portainer/portainer/api/http/proxy"
 	"github.com/portainer/portainer/api/http/security"
 	"github.com/portainer/portainer/api/internal/authorization"
@@ -34,6 +35,7 @@ type Handler struct {
 	SnapshotService      portainer.SnapshotService
 	K8sClientFactory     *cli.ClientFactory
 	ComposeStackManager  portainer.ComposeStackManager
+	DockerClientFactory  *dockerclient.ClientFactory
 	AuthorizationService *authorization.Service
 	BindAddress          string
 	BindAddressHTTPS     string
@@ -77,6 +79,8 @@ func NewHandler(bouncer security.BouncerService, demoService *demo.Service) *Han
 		bouncer.AuthenticatedAccess(httperror.LoggerHandler(h.endpointRegistryAccess))).Methods(http.MethodPut)
 
 	h.Handle("/endpoints/global-key", bouncer.PublicAccess(httperror.LoggerHandler(h.endpointCreateGlobalKey))).Methods(http.MethodPost)
+	h.Handle("/endpoints/{id}/forceupdateservice",
+		bouncer.AuthenticatedAccess(httperror.LoggerHandler(h.endpointForceUpdateService))).Methods(http.MethodPut)
 
 	// DEPRECATED
 	h.Handle("/endpoints/{id}/status", bouncer.PublicAccess(httperror.LoggerHandler(h.endpointStatusInspect))).Methods(http.MethodGet)
